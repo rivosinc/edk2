@@ -35,6 +35,7 @@
 #include <UniversalPayload/UniversalPayload.h>
 #include <UniversalPayload/ExtraData.h>
 #include <UniversalPayload/SerialPortInfo.h>
+#include <UniversalPayload/DeviceTree.h>
 #include <Guid/PcdDataBaseSignatureGuid.h>
 
 #define LEGACY_8259_MASK_REGISTER_MASTER  0x21
@@ -142,6 +143,29 @@ EFI_STATUS
 UniversalLoadDxeCore (
   IN  EFI_FIRMWARE_VOLUME_HEADER  *DxeFv,
   OUT PHYSICAL_ADDRESS            *DxeCoreEntryPoint
+  );
+
+/**
+  It will Parse FDT -custom node based on information from bootloaders.
+  @param[in]  FdtBase The starting memory address of FdtBase
+  @param[in]  HostList The starting memory address of New Hob list.
+
+**/
+UINT64
+CustomFdtNodeParser (
+  IN VOID  *Fdt,
+  IN VOID  *HostList
+  );
+
+/**
+  It will Parse FDT -node based on information from bootloaders.
+  @param[in]  FdtBase   The starting memory address of FdtBase
+  @retval HobList   The base address of Hoblist.
+
+**/
+UINT64
+FdtNodeParser (
+  IN VOID  *FdtBase
   );
 
 /**

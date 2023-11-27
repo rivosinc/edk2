@@ -46,10 +46,13 @@
 
 [Ppis]
   gEfiPeiLoadFilePpiGuid                 ## PRODUCES
+  gEfiReadyToPayloadPpiGuid              ## PRODUCES
+  gEfiEndOfPeiSignalPpiGuid              ## CONSUMES
 
 [Pcd]
   gPcAtChipsetPkgTokenSpaceGuid.PcdRtcIndexRegister
   gPcAtChipsetPkgTokenSpaceGuid.PcdRtcTargetRegister
+  gUefiPayloadPkgTokenSpaceGuid.PcdHandOffFdtEnable
 
 [Guids]
   gUniversalPayloadExtraDataGuid         ## PRODUCES
