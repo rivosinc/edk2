@@ -665,7 +665,7 @@
   !include NetworkPkg/Network.dsc.inc
 !endif
 
-[Components.X64, Components.IA32]
+[Components.common]
   #
   # DXE Core
   #
@@ -696,9 +696,6 @@
       NULL|MdeModulePkg/Library/BootMaintenanceManagerUiLib/BootMaintenanceManagerUiLib.inf
   }
   MdeModulePkg/Application/BootManagerMenuApp/BootManagerMenuApp.inf
-
-
-  PcAtChipsetPkg/HpetTimerDxe/HpetTimerDxe.inf
   MdeModulePkg/Universal/Metronome/Metronome.inf
   MdeModulePkg/Universal/WatchdogTimerDxe/WatchdogTimer.inf
   MdeModulePkg/Core/RuntimeDxe/RuntimeDxe.inf
@@ -707,7 +704,7 @@
 !if $(DISABLE_RESET_SYSTEM) == FALSE
   MdeModulePkg/Universal/ResetSystemRuntimeDxe/ResetSystemRuntimeDxe.inf
 !endif
-  PcAtChipsetPkg/PcatRealTimeClockRuntimeDxe/PcatRealTimeClockRuntimeDxe.inf
+
 !if $(EMU_VARIABLE_ENABLE) == TRUE
   MdeModulePkg/Universal/Variable/RuntimeDxe/VariableRuntimeDxe.inf
 !endif
@@ -721,7 +718,6 @@
 
   MdeModulePkg/Universal/ReportStatusCodeRouter/RuntimeDxe/ReportStatusCodeRouterRuntimeDxe.inf
   MdeModulePkg/Universal/StatusCodeHandler/RuntimeDxe/StatusCodeHandlerRuntimeDxe.inf
-  UefiCpuPkg/CpuIo2Dxe/CpuIo2Dxe.inf
   MdeModulePkg/Universal/DevicePathDxe/DevicePathDxe.inf
 !if $(MEMORY_TEST) == "GENERIC"
   MdeModulePkg/Universal/MemoryTest/GenericMemoryTestDxe/GenericMemoryTestDxe.inf
@@ -733,9 +729,6 @@
   MdeModulePkg/Universal/DisplayEngineDxe/DisplayEngineDxe.inf
   MdeModulePkg/Universal/PlatformDriOverrideDxe/PlatformDriOverrideDxe.inf
   MdeModulePkg/Universal/EbcDxe/EbcDxe.inf
-
-  UefiPayloadPkg/BlSupportDxe/BlSupportDxe.inf
-
   #
   # SMBIOS Support
   #
@@ -754,11 +747,6 @@
   # PCI Support
   #
   MdeModulePkg/Bus/Pci/PciBusDxe/PciBusDxe.inf
-  MdeModulePkg/Bus/Pci/PciHostBridgeDxe/PciHostBridgeDxe.inf {
-    <LibraryClasses>
-      PciHostBridgeLib|UefiPayloadPkg/Library/PciHostBridgeLib/PciHostBridgeLib.inf
-  }
-
   #
   # SCSI/ATA/IDE/DISK Support
   #
@@ -801,6 +789,31 @@
   MdeModulePkg/Bus/Usb/UsbMouseDxe/UsbMouseDxe.inf
 
   #
+  # Console Support
+  #
+  MdeModulePkg/Universal/Console/ConPlatformDxe/ConPlatformDxe.inf
+  MdeModulePkg/Universal/Console/ConSplitterDxe/ConSplitterDxe.inf
+  MdeModulePkg/Universal/Console/GraphicsConsoleDxe/GraphicsConsoleDxe.inf
+!if $(DISABLE_SERIAL_TERMINAL) == FALSE
+  MdeModulePkg/Universal/Console/TerminalDxe/TerminalDxe.inf
+!endif
+  UefiPayloadPkg/GraphicsOutputDxe/GraphicsOutputDxe.inf
+!if $(PERFORMANCE_MEASUREMENT_ENABLE)
+  MdeModulePkg/Universal/Acpi/FirmwarePerformanceDataTableDxe/FirmwarePerformanceDxe.inf
+!endif
+
+[Components.X64, Components.IA32]
+  UefiCpuPkg/CpuDxe/CpuDxe.inf
+  PcAtChipsetPkg/HpetTimerDxe/HpetTimerDxe.inf
+  PcAtChipsetPkg/PcatRealTimeClockRuntimeDxe/PcatRealTimeClockRuntimeDxe.inf
+  UefiCpuPkg/CpuIo2Dxe/CpuIo2Dxe.inf
+  UefiPayloadPkg/BlSupportDxe/BlSupportDxe.inf
+
+  MdeModulePkg/Bus/Pci/PciHostBridgeDxe/PciHostBridgeDxe.inf {
+    <LibraryClasses>
+      PciHostBridgeLib|UefiPayloadPkg/Library/PciHostBridgeLib/PciHostBridgeLib.inf
+  }
+  #
   # ISA Support
   #
 !if $(SERIAL_DRIVER_ENABLE) == TRUE
@@ -816,19 +829,6 @@
   MdeModulePkg/Bus/Isa/Ps2MouseDxe/Ps2MouseDxe.inf
 !endif
 
-  #
-  # Console Support
-  #
-  MdeModulePkg/Universal/Console/ConPlatformDxe/ConPlatformDxe.inf
-  MdeModulePkg/Universal/Console/ConSplitterDxe/ConSplitterDxe.inf
-  MdeModulePkg/Universal/Console/GraphicsConsoleDxe/GraphicsConsoleDxe.inf
-!if $(DISABLE_SERIAL_TERMINAL) == FALSE
-  MdeModulePkg/Universal/Console/TerminalDxe/TerminalDxe.inf
-!endif
-  UefiPayloadPkg/GraphicsOutputDxe/GraphicsOutputDxe.inf
-!if $(PERFORMANCE_MEASUREMENT_ENABLE)
-  MdeModulePkg/Universal/Acpi/FirmwarePerformanceDataTableDxe/FirmwarePerformanceDxe.inf
-!endif
   #
   # SMM Support
   #
