@@ -247,23 +247,6 @@
   BootLogoLib|MdeModulePkg/Library/BootLogoLib/BootLogoLib.inf
   CustomizedDisplayLib|MdeModulePkg/Library/CustomizedDisplayLib/CustomizedDisplayLib.inf
   FrameBufferBltLib|MdeModulePkg/Library/FrameBufferBltLib/FrameBufferBltLib.inf
-
-  #
-  # CPU
-  #
-  MtrrLib|UefiCpuPkg/Library/MtrrLib/MtrrLib.inf
-  LocalApicLib|UefiCpuPkg/Library/BaseXApicX2ApicLib/BaseXApicX2ApicLib.inf
-  MicrocodeLib|UefiCpuPkg/Library/MicrocodeLib/MicrocodeLib.inf
-  CpuPageTableLib|UefiCpuPkg/Library/CpuPageTableLib/CpuPageTableLib.inf
-
-  #
-  # Platform
-  #
-!if $(CPU_TIMER_LIB_ENABLE) == TRUE && $(UNIVERSAL_PAYLOAD) == TRUE
-  TimerLib|UefiCpuPkg/Library/CpuTimerLib/BaseCpuTimerLib.inf
-!else
-  TimerLib|UefiPayloadPkg/Library/AcpiTimerLib/AcpiTimerLib.inf
-!endif
   ResetSystemLib|UefiPayloadPkg/Library/ResetSystemLib/ResetSystemLib.inf
 !if $(USE_CBMEM_FOR_CONSOLE) == TRUE
   SerialPortLib|UefiPayloadPkg/Library/CbSerialPortLib/CbSerialPortLib.inf
@@ -326,6 +309,22 @@
   BmpSupportLib|MdeModulePkg/Library/BaseBmpSupportLib/BaseBmpSupportLib.inf
 !endif
 
+[LibraryClasses.X64, LibraryClasses.IA32]
+  #
+  # CPU
+  #
+  MtrrLib|UefiCpuPkg/Library/MtrrLib/MtrrLib.inf
+  LocalApicLib|UefiCpuPkg/Library/BaseXApicX2ApicLib/BaseXApicX2ApicLib.inf
+  MicrocodeLib|UefiCpuPkg/Library/MicrocodeLib/MicrocodeLib.inf
+  IoApicLib|PcAtChipsetPkg/Library/BaseIoApicLib/BaseIoApicLib.inf
+!if $(CPU_TIMER_LIB_ENABLE) == TRUE && $(UNIVERSAL_PAYLOAD) == TRUE
+  TimerLib|UefiCpuPkg/Library/CpuTimerLib/BaseCpuTimerLib.inf
+!else
+  TimerLib|UefiPayloadPkg/Library/AcpiTimerLib/AcpiTimerLib.inf
+!endif
+  CpuExceptionHandlerLib|UefiCpuPkg/Library/CpuExceptionHandlerLib/DxeCpuExceptionHandlerLib.inf
+  CpuPageTableLib|UefiCpuPkg/Library/CpuPageTableLib/CpuPageTableLib.inf
+
 [LibraryClasses.common.SEC]
   HobLib|UefiPayloadPkg/Library/PayloadEntryHobLib/HobLib.inf
   PcdLib|MdePkg/Library/BasePcdLibNull/BasePcdLibNull.inf
@@ -342,6 +341,8 @@
   MemoryAllocationLib|MdeModulePkg/Library/DxeCoreMemoryAllocationLib/DxeCoreMemoryAllocationLib.inf
   ExtractGuidedSectionLib|MdePkg/Library/DxeExtractGuidedSectionLib/DxeExtractGuidedSectionLib.inf
   ReportStatusCodeLib|MdeModulePkg/Library/DxeReportStatusCodeLib/DxeReportStatusCodeLib.inf
+
+[LibraryClasses.X64.DXE_CORE, LibraryClasses.IA32.DXE_CORE]
 !if $(SOURCE_DEBUG_ENABLE)
   DebugAgentLib|SourceLevelDebugPkg/Library/DebugAgent/DxeDebugAgentLib.inf
 !endif
@@ -355,6 +356,10 @@
   MemoryAllocationLib|MdePkg/Library/UefiMemoryAllocationLib/UefiMemoryAllocationLib.inf
   ExtractGuidedSectionLib|MdePkg/Library/DxeExtractGuidedSectionLib/DxeExtractGuidedSectionLib.inf
   ReportStatusCodeLib|MdeModulePkg/Library/DxeReportStatusCodeLib/DxeReportStatusCodeLib.inf
+
+[LibraryClasses.X64.DXE_DRIVER, LibraryClasses.IA32.DXE_DRIVER]
+  CpuExceptionHandlerLib|UefiCpuPkg/Library/CpuExceptionHandlerLib/DxeCpuExceptionHandlerLib.inf
+  MpInitLib|UefiCpuPkg/Library/MpInitLib/DxeMpInitLib.inf
 !if $(SOURCE_DEBUG_ENABLE)
   DebugAgentLib|SourceLevelDebugPkg/Library/DebugAgent/DxeDebugAgentLib.inf
 !endif
@@ -381,7 +386,7 @@
   PerformanceLib|MdeModulePkg/Library/DxePerformanceLib/DxePerformanceLib.inf
 !endif
 
-[LibraryClasses.common.SMM_CORE]
+[LibraryClasses.X64.SMM_CORE, LibraryClasses.IA32.SMM_CORE]
 !if $(SMM_SUPPORT) == TRUE
   PcdLib|MdePkg/Library/DxePcdLib/DxePcdLib.inf
   SmmServicesTableLib|MdeModulePkg/Library/PiSmmCoreSmmServicesTableLib/PiSmmCoreSmmServicesTableLib.inf
@@ -395,7 +400,7 @@
 !endif
 !endif
 
-[LibraryClasses.common.DXE_SMM_DRIVER]
+[LibraryClasses.X64.DXE_SMM_DRIVER, LibraryClasses.IA32.DXE_SMM_DRIVER]
 !if $(SMM_SUPPORT) == TRUE
   PcdLib|MdePkg/Library/DxePcdLib/DxePcdLib.inf
 
@@ -425,13 +430,15 @@
 #
 ################################################################################
 [PcdsFeatureFlag]
-  gEfiMdeModulePkgTokenSpaceGuid.PcdDxeIplSwitchToLongMode|TRUE
   gEfiMdeModulePkgTokenSpaceGuid.PcdConOutGopSupport|TRUE
   gEfiMdeModulePkgTokenSpaceGuid.PcdConOutUgaSupport|FALSE
   ## This PCD specified whether ACPI SDT protocol is installed.
   gEfiMdeModulePkgTokenSpaceGuid.PcdInstallAcpiSdtProtocol|TRUE
   gEfiMdeModulePkgTokenSpaceGuid.PcdHiiOsRuntimeSupport|FALSE
   gEfiMdeModulePkgTokenSpaceGuid.PcdPciDegradeResourceForOptionRom|FALSE
+
+[PcdsFeatureFlag.X64, PcdsFeatureFlag.IA32]
+  gEfiMdeModulePkgTokenSpaceGuid.PcdDxeIplSwitchToLongMode|TRUE
   gUefiCpuPkgTokenSpaceGuid.PcdCpuSmmEnableBspElection|FALSE
 
 [PcdsFixedAtBuild]
