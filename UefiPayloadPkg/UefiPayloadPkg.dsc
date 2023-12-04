@@ -19,11 +19,12 @@
   PLATFORM_GUID                       = F71608AB-D63D-4491-B744-A99998C8CD96
   PLATFORM_VERSION                    = 0.1
   DSC_SPECIFICATION                   = 0x00010005
-  SUPPORTED_ARCHITECTURES             = IA32|X64
+  SUPPORTED_ARCHITECTURES             = IA32|X64|RISCV64
   BUILD_TARGETS                       = DEBUG|RELEASE|NOOPT
   SKUID_IDENTIFIER                    = DEFAULT
   OUTPUT_DIRECTORY                    = Build/UefiPayloadPkg
-  FLASH_DEFINITION                    = UefiPayloadPkg/UefiPayloadPkg.fdf
+  FLASH_DEFINITION                    = UefiPayloadPkg/UefiPayloadPkgRV64.fdf
+#  FLASH_DEFINITION                    = UefiPayloadPkg/UefiPayloadPkg.fdf
   PCD_DYNAMIC_AS_DYNAMICEX            = TRUE
 
   DEFINE SOURCE_DEBUG_ENABLE          = FALSE
@@ -261,7 +262,6 @@
   PlatformHookLib|UefiPayloadPkg/Library/PlatformHookLib/PlatformHookLib.inf
 !endif
   PlatformBootManagerLib|UefiPayloadPkg/Library/PlatformBootManagerLib/PlatformBootManagerLib.inf
-  IoApicLib|PcAtChipsetPkg/Library/BaseIoApicLib/BaseIoApicLib.inf
 
   #
   # Misc
@@ -309,6 +309,24 @@
   SafeIntLib|MdePkg/Library/BaseSafeIntLib/BaseSafeIntLib.inf
   BmpSupportLib|MdeModulePkg/Library/BaseBmpSupportLib/BaseBmpSupportLib.inf
 !endif
+
+[LibraryClasses.RISCV64]
+  RiscVSbiLib|MdePkg/Library/BaseRiscVSbiLib/BaseRiscVSbiLib.inf
+  BaseMemoryLib|MdePkg/Library/BaseMemoryLib/BaseMemoryLib.inf
+  TimerLib|UefiCpuPkg/Library/BaseRiscV64CpuTimerLib/BaseRiscV64CpuTimerLib.inf
+  # RISC-V Architectural Libraries
+  CpuExceptionHandlerLib|UefiCpuPkg/Library/BaseRiscV64CpuExceptionHandlerLib/BaseRiscV64CpuExceptionHandlerLib.inf
+  ResetSystemLib|OvmfPkg/RiscVVirt/Library/ResetSystemLib/BaseResetSystemLib.inf
+  RealTimeClockLib|EmbeddedPkg/Library/VirtualRealTimeClockLib/VirtualRealTimeClockLib.inf
+  TimeBaseLib|EmbeddedPkg/Library/TimeBaseLib/TimeBaseLib.inf
+  PciCapLib|OvmfPkg/Library/BasePciCapLib/BasePciCapLib.inf
+  PciCapPciIoLib|OvmfPkg/Library/UefiPciCapPciIoLib/UefiPciCapPciIoLib.inf
+  RiscVMmuLib|UefiCpuPkg/Library/BaseRiscVMmuLib/BaseRiscVMmuLib.inf
+  QemuFwCfgLib|OvmfPkg/Library/QemuFwCfgLib/QemuFwCfgLibMmio.inf
+ # Virtio Support
+  VirtioLib|OvmfPkg/Library/VirtioLib/VirtioLib.inf
+  VirtioMmioDeviceLib|OvmfPkg/Library/VirtioMmioDeviceLib/VirtioMmioDeviceLib.inf
+  OrderedCollectionLib|MdePkg/Library/BaseOrderedCollectionRedBlackTreeLib/BaseOrderedCollectionRedBlackTreeLib.inf
 
 [LibraryClasses.X64, LibraryClasses.IA32]
   #
@@ -606,7 +624,9 @@
   gEfiMdeModulePkgTokenSpaceGuid.PcdTestKeyUsed|FALSE
   gUefiCpuPkgTokenSpaceGuid.PcdSevEsIsEnabled|0
   gEfiMdeModulePkgTokenSpaceGuid.PcdPciDisableBusEnumeration|TRUE
+  gEfiMdePkgTokenSpaceGuid.PcdPciIoTranslation|0
 
+[PcdsDynamicExDefault.X64, PcdsDynamicExDefault.IA32]
   gPcAtChipsetPkgTokenSpaceGuid.PcdRtcIndexRegister|$(RTC_INDEX_REGISTER)
   gPcAtChipsetPkgTokenSpaceGuid.PcdRtcTargetRegister|$(RTC_TARGET_REGISTER)
 
@@ -635,7 +655,7 @@
   !else
     UefiPayloadPkg/UefiPayloadEntry/UefiPayloadEntry.inf
   !endif
-!else
+!elseif "X64" in "$(ARCH)"
   [Components.X64]
   !if $(UNIVERSAL_PAYLOAD) == TRUE
     !if $(UNIVERSAL_PAYLOAD_FORMAT) == "ELF"
@@ -653,6 +673,13 @@
     !endif
   !else
     UefiPayloadPkg/UefiPayloadEntry/UefiPayloadEntry.inf
+  !endif
+!elseif "RISCV64" in "$(ARCH)"
+  [Components.RISCV64]
+  !if $(UNIVERSAL_PAYLOAD) == TRUE
+    !if $(UNIVERSAL_PAYLOAD_FORMAT) == "FIT"
+      UefiPayloadPkg/UefiPayloadEntry/FitUniversalPayloadEntry.inf
+    !endif
   !endif
 !endif
 
@@ -684,7 +711,6 @@
 !if $(SECURITY_STUB_ENABLE) == TRUE
   MdeModulePkg/Universal/SecurityStubDxe/SecurityStubDxe.inf
 !endif
-  UefiCpuPkg/CpuDxe/CpuDxe.inf
   MdeModulePkg/Universal/BdsDxe/BdsDxe.inf
 !if $(BOOTSPLASH_IMAGE)
   MdeModulePkg/Logo/LogoDxe.inf
@@ -728,7 +754,7 @@
   MdeModulePkg/Universal/SetupBrowserDxe/SetupBrowserDxe.inf
   MdeModulePkg/Universal/DisplayEngineDxe/DisplayEngineDxe.inf
   MdeModulePkg/Universal/PlatformDriOverrideDxe/PlatformDriOverrideDxe.inf
-  MdeModulePkg/Universal/EbcDxe/EbcDxe.inf
+
   #
   # SMBIOS Support
   #
@@ -801,13 +827,49 @@
 !if $(PERFORMANCE_MEASUREMENT_ENABLE)
   MdeModulePkg/Universal/Acpi/FirmwarePerformanceDataTableDxe/FirmwarePerformanceDxe.inf
 !endif
+!if $(SERIAL_DRIVER_ENABLE) == TRUE
+  MdeModulePkg/Universal/SerialDxe/SerialDxe.inf
+!endif
+[Components.RISCV64]
+  UefiCpuPkg/CpuDxeRiscV64/CpuDxeRiscV64.inf
+  UefiCpuPkg/CpuTimerDxeRiscV64/CpuTimerDxeRiscV64.inf
+  EmbeddedPkg/RealTimeClockRuntimeDxe/RealTimeClockRuntimeDxe.inf
+  EmbeddedPkg/Library/VirtualRealTimeClockLib/VirtualRealTimeClockLib.inf
+  OvmfPkg/PlatformHasAcpiDtDxe/PlatformHasAcpiDtDxe.inf
+
+  #
+  # Platform Driver
+  #
+  OvmfPkg/Fdt/VirtioFdtDxe/VirtioFdtDxe.inf
+  EmbeddedPkg/Drivers/FdtClientDxe/FdtClientDxe.inf
+  OvmfPkg/Fdt/HighMemDxe/HighMemDxe.inf
+  OvmfPkg/VirtioBlkDxe/VirtioBlk.inf
+  OvmfPkg/VirtioScsiDxe/VirtioScsi.inf
+  OvmfPkg/VirtioNetDxe/VirtioNet.inf
+  OvmfPkg/VirtioRngDxe/VirtioRng.inf
+  OvmfPkg/VirtioPciDeviceDxe/VirtioPciDeviceDxe.inf
+  OvmfPkg/Virtio10Dxe/Virtio10.inf
+!if $(VARIABLE_SUPPORT) == "EMU"
+  MdeModulePkg/Universal/Variable/RuntimeDxe/VariableRuntimeDxe.inf
+!endif
+  MdeModulePkg/Bus/Pci/PciHostBridgeDxe/PciHostBridgeDxe.inf {
+  <LibraryClasses>
+    PciHostBridgeLib|OvmfPkg/Fdt/FdtPciHostBridgeLib/FdtPciHostBridgeLib.inf
+    PciHostBridgeUtilityLib|OvmfPkg/Library/PciHostBridgeUtilityLib/PciHostBridgeUtilityLib.inf
+    PciPcdProducerLib|OvmfPkg/Fdt/FdtPciPcdProducerLib/FdtPciPcdProducerLib.inf
+    DxeHardwareInfoLib|OvmfPkg/Library/HardwareInfoLib/DxeHardwareInfoLib.inf
+    MemEncryptSevLib|OvmfPkg/Library/BaseMemEncryptSevLib/DxeMemEncryptSevLib.inf
+  }
+
 
 [Components.X64, Components.IA32]
   UefiCpuPkg/CpuDxe/CpuDxe.inf
   PcAtChipsetPkg/HpetTimerDxe/HpetTimerDxe.inf
   PcAtChipsetPkg/PcatRealTimeClockRuntimeDxe/PcatRealTimeClockRuntimeDxe.inf
+MdeModulePkg/Universal/EbcDxe/EbcDxe.inf
   UefiCpuPkg/CpuIo2Dxe/CpuIo2Dxe.inf
   UefiPayloadPkg/BlSupportDxe/BlSupportDxe.inf
+  UefiCpuPkg/CpuDxe/CpuDxe.inf
 
   MdeModulePkg/Bus/Pci/PciHostBridgeDxe/PciHostBridgeDxe.inf {
     <LibraryClasses>
@@ -816,9 +878,7 @@
   #
   # ISA Support
   #
-!if $(SERIAL_DRIVER_ENABLE) == TRUE
-  MdeModulePkg/Universal/SerialDxe/SerialDxe.inf
-!endif
+
 !if $(SIO_BUS_ENABLE) == TRUE
   OvmfPkg/SioBusDxe/SioBusDxe.inf
 !endif
@@ -845,7 +905,6 @@
   MdeModulePkg/Universal/Acpi/FirmwarePerformanceDataTableSmm/FirmwarePerformanceSmm.inf
 !endif
 !endif
-
 !if $(VARIABLE_SUPPORT) == "EMU"
   MdeModulePkg/Universal/Variable/RuntimeDxe/VariableRuntimeDxe.inf
 !elseif $(VARIABLE_SUPPORT) == "SPI"
@@ -856,7 +915,6 @@
       NULL|MdeModulePkg/Library/VarCheckPcdLib/VarCheckPcdLib.inf
       NULL|MdeModulePkg/Library/VarCheckPolicyLib/VarCheckPolicyLib.inf
   }
-
   UefiPayloadPkg/FvbRuntimeDxe/FvbSmm.inf
   MdeModulePkg/Universal/FaultTolerantWriteDxe/FaultTolerantWriteSmm.inf
   MdeModulePkg/Universal/Variable/RuntimeDxe/VariableSmmRuntimeDxe.inf
@@ -889,7 +947,7 @@
   ShellLib|ShellPkg/Library/UefiShellLib/UefiShellLib.inf
   !include NetworkPkg/NetworkLibs.dsc.inc
 
-[Components.X64, Components.IA32]
+[Components]
   ShellPkg/DynamicCommand/TftpDynamicCommand/TftpDynamicCommand.inf {
     <PcdsFixedAtBuild>
       ## This flag is used to control initialization of the shell library
