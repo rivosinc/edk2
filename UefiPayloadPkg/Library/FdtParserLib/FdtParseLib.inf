@@ -40,7 +40,7 @@
   gEfiGraphicsInfoHobGuid
   gEfiGraphicsDeviceInfoHobGuid
 
-[Pcd.IA32,Pcd.X64]
+[Pcd.IA32,Pcd.X64,Pcd.RISCV64]
   gUefiPayloadPkgTokenSpaceGuid.PcdPayloadFdMemSize
   gUefiPayloadPkgTokenSpaceGuid.PcdSystemMemoryUefiRegionSize
   gUefiPayloadPkgTokenSpaceGuid.PcdHandOffFdtEnable

@@ -23,8 +23,8 @@
   BUILD_TARGETS                       = DEBUG|RELEASE|NOOPT
   SKUID_IDENTIFIER                    = DEFAULT
   OUTPUT_DIRECTORY                    = Build/UefiPayloadPkg
-  FLASH_DEFINITION                    = UefiPayloadPkg/UefiPayloadPkgRV64.fdf
-#  FLASH_DEFINITION                    = UefiPayloadPkg/UefiPayloadPkg.fdf
+#  FLASH_DEFINITION                    = UefiPayloadPkg/UefiPayloadPkgRV64.fdf
+  FLASH_DEFINITION                    = UefiPayloadPkg/UefiPayloadPkg.fdf
   PCD_DYNAMIC_AS_DYNAMICEX            = TRUE
 
   DEFINE SOURCE_DEBUG_ENABLE          = FALSE
@@ -678,7 +678,13 @@
   [Components.RISCV64]
   !if $(UNIVERSAL_PAYLOAD) == TRUE
     !if $(UNIVERSAL_PAYLOAD_FORMAT) == "FIT"
-      UefiPayloadPkg/UefiPayloadEntry/FitUniversalPayloadEntry.inf
+      UefiPayloadPkg/UefiPayloadEntry/FitUniversalPayloadEntry.inf {
+        <LibraryClasses>
+          FdtLib|MdePkg/Library/BaseFdtLib/BaseFdtLib.inf
+          CustomFdtNodeParserLib|UefiPayloadPkg/Library/CustomFdtNodeParserLib/CustomFdtNodeParserLib.inf
+          NULL|UefiPayloadPkg/Library/FdtParserLib/FdtParseLib.inf
+          NULL|UefiPayloadPkg/Library/HobParseLib/HobParseLib.inf
+      }
     !endif
   !endif
 !endif
