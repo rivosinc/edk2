@@ -510,6 +510,13 @@ FitBuildHobs (
   return EFI_SUCCESS;
 }
 
+EFI_STATUS
+ParseUplInputParams (
+  IN  UINTN                       Param1,
+  IN  UINTN                       Param2,
+  OUT UINTN                       **BootloaderParameter
+  );
+
 /**
   Entry point to the C language phase of UEFI payload.
   @param[in]   BootloaderParameter    The starting address of bootloader parameter block.
@@ -518,7 +525,8 @@ FitBuildHobs (
 EFI_STATUS
 EFIAPI
 _ModuleEntryPoint (
-  IN UINTN  BootloaderParameter
+  IN UINTN  Param1,
+  IN UINTN  Param2
   )
 {
   EFI_STATUS                  Status;
@@ -527,16 +535,17 @@ _ModuleEntryPoint (
   EFI_FIRMWARE_VOLUME_HEADER  *DxeFv;
   PHYSICAL_ADDRESS            HobListPtr;
   VOID                        *FdtBase;
-
+  UINTN                       *BootloaderParameter;
   DxeFv = NULL;
   // Call constructor for all libraries
   ProcessLibraryConstructorList ();
 
   DEBUG ((DEBUG_INFO, "Entering Universal Payload...\n"));
   DEBUG ((DEBUG_INFO, "sizeof(UINTN) = 0x%x\n", sizeof (UINTN)));
-  DEBUG ((DEBUG_INFO, "BootloaderParameter = 0x%x\n", BootloaderParameter));
 
   DEBUG ((DEBUG_INFO, "Start init Hobs...\n"));
+  ParseUplInputParams (Param1, Param2, &BootloaderParameter);
+  DEBUG ((DEBUG_INFO, "BootloaderParameter = 0x%x\n", *BootloaderParameter));
   HobListPtr = UplInitHob ((VOID *)BootloaderParameter);
 
   //
