@@ -248,6 +248,36 @@ FdtSubnodeOffsetNameLen (
   );
 
 /**
+  Returns number of reserved ranges.
+
+  @param[in] Fdt             The pointer to FDT blob.
+
+  @return The number of reserved ranges.
+
+**/
+INTN
+EFIAPI
+FdtNumRsv (
+  IN CONST VOID   *Fdt
+  );
+
+/**
+  Returns reserved range for index.
+
+  @param[in] Fdt             The pointer to FDT blob.
+
+  @return reserved range.
+
+**/
+INTN
+EFIAPI
+FdtGetMemRsv(
+  IN CONST VOID *Fdt,
+  INTN Index,
+  EFI_PHYSICAL_ADDRESS *Addr,
+  UINT64 *Size
+  );
+/**
   Returns a offset of first node which includes the given property name and value.
 
   @param[in] Fdt             The pointer to FDT blob.
