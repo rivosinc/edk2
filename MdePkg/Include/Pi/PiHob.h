@@ -29,6 +29,10 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 #define EFI_HOB_TYPE_UNUSED               0xFFFE
 #define EFI_HOB_TYPE_END_OF_HOB_LIST      0xFFFF
 
+// For now using this higher count to ensure it does not conflict with PI
+// defined HOBs. Once RV CPU HOB is ratified it should come from PiHob.h.
+#define EFI_HOB_TYPE_RV_CPU  0xFFEE
+
 ///
 /// Describes the format and size of the data inside the HOB.
 /// All HOBs must contain this generic HOB header.
@@ -455,6 +459,14 @@ typedef struct {
   UINT8                     Reserved[6];
 } EFI_HOB_CPU;
 
+typedef struct {
+  ///
+  /// The HOB generic header. Header.HobType = EFI_HOB_TYPE_CPU.
+  ///
+  EFI_HOB_GENERIC_HEADER    Header;
+  UINT8                     CpuId;
+  UINT8                     Reserved[7];
+} EFI_HOB_RVCPU;
 ///
 /// Describes pool memory allocations.
 ///
