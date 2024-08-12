@@ -196,14 +196,8 @@ ParseDtb (
         }
       }
     } // end of memory node
-    else {
-      if (Depth == 1) {
-        PropertyPtr = FdtGetProperty (Fdt, Node, "compatible", &TempLen);
-        TempStr     = (CHAR8 *)(PropertyPtr->Data);
-        if (AsciiStrnCmp (TempStr, "pci-rb", AsciiStrLen ("pci-rb")) == 0) {
-          RootBridgeCount++;
-        }
-      }
+    else if (AsciiStrnCmp (NodePtr->Name, "pci-rb", AsciiStrLen ("pci-rb")) == 0) {
+      RootBridgeCount++;
     }
   }
 
