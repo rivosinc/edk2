@@ -295,7 +295,12 @@ ParseDtb (
           } else if (AsciiStrnCmp (TempStr, "acpi-nvs", AsciiStrLen ("acpi-nvs")) == 0) {
             DEBUG ((DEBUG_INFO, "  acpi-nvs"));
             BuildMemoryAllocationHob (StartAddress, NumberOfBytes, EfiACPIMemoryNVS);
-          } else if (AsciiStrnCmp (TempStr, "smbios", AsciiStrLen ("smbios")) == 0) {
+          } else if (AsciiStrnCmp (TempStr, "soft-reserve", AsciiStrLen ("soft-reserve")) == 0) {
+            Attribute = MEMORY_ATTRIBUTE_DEFAULT | EFI_RESOURCE_ATTRIBUTE_SPECIAL_PURPOSE;
+            DEBUG ((DEBUG_INFO, "  soft-reserve"));
+            BuildResourceDescriptorHob (EFI_RESOURCE_SYSTEM_MEMORY, Attribute, StartAddress, NumberOfBytes);;
+          } 
+           else if (AsciiStrnCmp (TempStr, "smbios", AsciiStrLen ("smbios")) == 0) {
             DEBUG ((DEBUG_INFO, " build smbios, NumberOfBytes:%x", NumberOfBytes));
             SmbiosTable = BuildGuidHob (&gUniversalPayloadSmbios3TableGuid, sizeof (UNIVERSAL_PAYLOAD_SMBIOS_TABLE) + sizeof (SMBIOS_TABLE_3_0_ENTRY_POINT));
             if (SmbiosTable != NULL) {
