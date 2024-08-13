@@ -139,6 +139,9 @@ ParseDtb (
   UINT8                               Base;
   UINT16                              *Data16;
   CHAR8                               *GmaStr;
+  INTN                                  NumRsv;
+  EFI_PHYSICAL_ADDRESS                  Addr;
+  UINT64                                Size;
 
   Fdt               = FdtBase;
   Depth             = 0;
@@ -199,6 +202,20 @@ ParseDtb (
     else if (AsciiStrnCmp (NodePtr->Name, "pci-rb", AsciiStrLen ("pci-rb")) == 0) {
       RootBridgeCount++;
     }
+  }
+
+  NumRsv = FdtNumRsv(Fdt);
+  /* Look for an existing entry and add it to the efi mem map. */
+  for (UINT8 I = 0; I < NumRsv; I++) {
+    if (FdtGetMemRsv (Fdt, I, &Addr, &Size) != 0) {
+      continue;
+    }
+
+    BuildMemoryAllocationHob (
+      Addr,
+      Size,
+      EfiReservedMemoryType
+      );
   }
 
   index = RootBridgeCount - 1;
