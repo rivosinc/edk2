@@ -34,9 +34,9 @@
 #define N_NON_RELOCATABLE       BIT31
 #define P_NON_PREFETCHABLE      BIT30
 #define SS_CONFIGURATION_SPACE  0
-#define SS_IO_SPACE             BIT23
-#define SS_32BIT_MEMORY_SPACE   BIT24
-#define SS_64BIT_MEMORY_SPACE   BIT23+BIT24
+#define SS_IO_SPACE             BIT24
+#define SS_32BIT_MEMORY_SPACE   BIT25
+#define SS_64BIT_MEMORY_SPACE   BIT25+BIT24
 
 #define MEMORY_ATTRIBUTE_DEFAULT  (EFI_RESOURCE_ATTRIBUTE_PRESENT                   | \
                                      EFI_RESOURCE_ATTRIBUTE_INITIALIZED             | \
@@ -659,9 +659,9 @@ ParseDtb (
         if (AsciiStrCmp (TempStr, "bus-range") == 0) {
           DEBUG ((DEBUG_INFO, "  Found bus-range Property TempLen (%08X)\n", TempLen));
 
-          Data16                                               = (UINT16 *)(PropertyPtr->Data);
-          PciRootBridgeInfo->RootBridge[index].Bus.Base        = Fdt16ToCpu (*Data16) & 0xFF;
-          PciRootBridgeInfo->RootBridge[index].Bus.Limit       = Fdt16ToCpu (*(Data16 + 1)) & 0xFF;
+          Data32                                               = (UINT32 *)(PropertyPtr->Data);
+          PciRootBridgeInfo->RootBridge[index].Bus.Base        = Fdt32ToCpu (*Data32) & 0xFF;
+          PciRootBridgeInfo->RootBridge[index].Bus.Limit       = Fdt32ToCpu (*(Data32 + 1)) & 0xFF;
           PciRootBridgeInfo->RootBridge[index].Bus.Translation = 0;
 
           DEBUG ((DEBUG_INFO, "PciRootBridge->Bus.Base %x, \n", PciRootBridgeInfo->RootBridge[index].Bus.Base));
