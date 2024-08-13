@@ -18,6 +18,7 @@
 #include <Library/DevicePathLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/PciHostBridgeLib.h>
+#include <Library/PciSegmentInfoLib.h>
 #include <Library/PciLib.h>
 #include <Library/HobLib.h>
 
@@ -216,6 +217,46 @@ PciHostBridgeGetRootBridges (
   }
 
   return ScanForRootBridges (Count);
+}
+
+/**
+  Return all the root bridge instances in an array.
+
+  @param Count  Return the count of root bridge instances.
+
+  @return All the root bridge instances in an array.
+          The array should be passed into PciHostBridgeFreeRootBridges()
+          when it's not used.
+**/
+PCI_SEGMENT_INFO*
+EFIAPI
+GetPciSegmentInfo (
+  UINTN  *Count
+  )
+{
+  UNIVERSAL_PAYLOAD_PCI_ROOT_BRIDGES  *PciRootBridgeInfo;
+  EFI_HOB_GUID_TYPE                   *GuidHob;
+  UNIVERSAL_PAYLOAD_GENERIC_HEADER    *GenericHeader;
+
+  //
+  // Find Universal Payload PCI Root Bridge Info hob
+  //
+  GuidHob = GetFirstGuidHob (&gUniversalPayloadPciRootBridgeInfoGuid);
+  if (GuidHob != NULL) {
+    GenericHeader = (UNIVERSAL_PAYLOAD_GENERIC_HEADER *)GET_GUID_HOB_DATA (GuidHob);
+    if ((sizeof (UNIVERSAL_PAYLOAD_GENERIC_HEADER) <= GET_GUID_HOB_DATA_SIZE (GuidHob)) && (GenericHeader->Length <= GET_GUID_HOB_DATA_SIZE (GuidHob))) {
+      if ((GenericHeader->Revision == UNIVERSAL_PAYLOAD_PCI_ROOT_BRIDGES_REVISION) && (GenericHeader->Length >= sizeof (UNIVERSAL_PAYLOAD_PCI_ROOT_BRIDGES))) {
+        //
+        // UNIVERSAL_PAYLOAD_PCI_ROOT_BRIDGES structure is used when Revision equals to UNIVERSAL_PAYLOAD_PCI_ROOT_BRIDGES_REVISION
+        //
+        PciRootBridgeInfo = (UNIVERSAL_PAYLOAD_PCI_ROOT_BRIDGES *)GET_GUID_HOB_DATA (GuidHob);
+        if (PciRootBridgeInfo->Count <= (GET_GUID_HOB_DATA_SIZE (GuidHob) - sizeof (UNIVERSAL_PAYLOAD_PCI_ROOT_BRIDGES)) / sizeof (UNIVERSAL_PAYLOAD_PCI_ROOT_BRIDGE)) {
+          return RetrieveSegmentInfoFromHob (PciRootBridgeInfo, Count);
+        }
+      }
+    }
+  }
+  return 0;
 }
 
 /**

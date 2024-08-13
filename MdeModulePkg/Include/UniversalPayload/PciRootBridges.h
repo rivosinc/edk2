@@ -47,6 +47,7 @@ typedef struct {
 ///
 typedef struct {
   UINT32                                        Segment;               ///< Segment number.
+  UNIVERSAL_PAYLOAD_PCI_ROOT_BRIDGE_APERTURE    Ecam;
   UINT64                                        Supports;              ///< Supported attributes.
                                                                        ///< Refer to EFI_PCI_ATTRIBUTE_xxx used by GetAttributes()
                                                                        ///< and SetAttributes() in EFI_PCI_ROOT_BRIDGE_IO_PROTOCOL.

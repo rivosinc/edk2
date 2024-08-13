@@ -46,6 +46,19 @@ RetrieveRootBridgeInfoFromHob (
   );
 
 /**
+  Find segment info from all root bridges
+
+  @param[in]  PciRootBridgeInfo    Pointer of Universal Payload PCI Root Bridge Info Hob
+  @param[out] NumberOfRootBridges  Number of root bridges detected
+
+  @retval     Pointer to the allocated Segment info structure array.
+
+**/
+PCI_SEGMENT_INFO *
+RetrieveSegmentInfoFromHob(
+    IN UNIVERSAL_PAYLOAD_PCI_ROOT_BRIDGES *PciRootBridgeInfo,
+    OUT UINTN *NumberOfRootBridges);
+/**
   Initialize a PCI_ROOT_BRIDGE structure.
 
   @param[in]  Supports         Supported attributes.

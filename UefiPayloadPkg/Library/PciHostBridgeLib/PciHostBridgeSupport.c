@@ -15,6 +15,7 @@
 #include <Library/DebugLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/PciHostBridgeLib.h>
+#include <Library/PciSegmentInfoLib.h>
 #include <Library/PciLib.h>
 #include "PciHostBridge.h"
 
@@ -595,4 +596,67 @@ RetrieveRootBridgeInfoFromHob (
   }
 
   return PciRootBridges;
+}
+
+static PCI_SEGMENT_INFO  *PciSegments = 0;
+
+/**
+  Find segment info from all root bridges
+
+  @param[in]  PciRootBridgeInfo    Pointer of Universal Payload PCI Root Bridge Info Hob
+  @param[out] NumberOfRootBridges  Number of root bridges detected
+
+  @retval     Pointer to the allocated Segment info structure array.
+
+**/
+PCI_SEGMENT_INFO*
+RetrieveSegmentInfoFromHob (
+  IN  UNIVERSAL_PAYLOAD_PCI_ROOT_BRIDGES  *PciRootBridgeInfo,
+  OUT UINTN                               *NumberOfRootBridges
+  )
+{
+  UINTN            Size;
+  UINT8            Index;
+
+  ASSERT (PciRootBridgeInfo != NULL);
+  ASSERT (NumberOfRootBridges != NULL);
+  if (PciRootBridgeInfo == NULL) {
+    return NULL;
+  }
+
+  if (PciRootBridgeInfo->Count == 0) {
+    PcdSetBoolS (PcdPciDisableBusEnumeration, FALSE);
+    return NULL;
+  }
+
+  *NumberOfRootBridges = PciRootBridgeInfo->Count;
+  if (PciSegments)
+    return PciSegments;
+
+  Size           = PciRootBridgeInfo->Count * sizeof (PCI_SEGMENT_INFO);
+  PciSegments = (PCI_SEGMENT_INFO *)AllocatePool (Size);
+  ASSERT (PciSegments != NULL);
+  ZeroMem (PciSegments, PciRootBridgeInfo->Count * sizeof (PCI_SEGMENT_INFO));
+
+  //
+  // Create all root bridges with PciRootBridgeInfoHob
+  //
+  for (Index = 0; Index < PciRootBridgeInfo->Count; Index++) {
+    PciSegments[Index].BaseAddress = PciRootBridgeInfo->RootBridge[Index].Ecam.Base;
+    PciSegments[Index].SegmentNumber = PciRootBridgeInfo->RootBridge[Index].Segment;
+    PciSegments[Index].StartBusNumber = PciRootBridgeInfo->RootBridge[Index].Bus.Base;
+    PciSegments[Index].EndBusNumber = PciRootBridgeInfo->RootBridge[Index].Bus.Limit;
+  }
+
+  //
+  // Now, this library only supports RootBridge that ResourceAssigned is True
+  //
+  if (PciRootBridgeInfo->ResourceAssigned) {
+    PcdSetBoolS (PcdPciDisableBusEnumeration, TRUE);
+  } else {
+    DEBUG ((DEBUG_INFO, "There is root bridge whose ResourceAssigned is FALSE\n"));
+    PcdSetBoolS (PcdPciDisableBusEnumeration, FALSE);
+  }
+
+  return PciSegments;
 }

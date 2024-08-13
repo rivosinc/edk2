@@ -450,7 +450,7 @@ ParseDtb (
         PciRootBridgeInfo->Header.Length    = sizeof (UNIVERSAL_PAYLOAD_PCI_ROOT_BRIDGES);
         PciRootBridgeInfo->Header.Revision  = UNIVERSAL_PAYLOAD_PCI_ROOT_BRIDGES_REVISION;
         PciRootBridgeInfo->Count            = RootBridgeCount;
-        PciRootBridgeInfo->ResourceAssigned = (BOOLEAN)PciEnumDone;
+        PciRootBridgeInfo->ResourceAssigned = TRUE; //(BOOLEAN)PciEnumDone;
       }
 
       for (SubNode = FdtFirstSubnode (Fdt, Node); SubNode >= 0; SubNode = FdtNextSubnode (Fdt, SubNode)) {
@@ -655,7 +655,17 @@ ParseDtb (
           DEBUG ((DEBUG_INFO, "PciRootBridge->Io.Base %llx, \n", PciRootBridgeInfo->RootBridge[index].Io.Base));
           DEBUG ((DEBUG_INFO, "PciRootBridge->Io.limit %llx, \n", PciRootBridgeInfo->RootBridge[index].Io.Limit));
         }
+        if (AsciiStrCmp (TempStr, "reg") == 0) {
+          DEBUG ((DEBUG_INFO, "  Found ecam Property TempLen (%08X)\n", TempLen));
+          Data64                                               = (UINT64 *)(PropertyPtr->Data);
+          PciRootBridgeInfo->RootBridge[index].Ecam.Base       = Fdt64ToCpu (*Data64);
+          PciRootBridgeInfo->RootBridge[index].Ecam.Limit      = Fdt64ToCpu (*(Data64 + 1));
+          PciRootBridgeInfo->RootBridge[index].Segment         = index;
 
+          DEBUG ((DEBUG_INFO, "PciRootBridge->Ecam.Base %llx, \n", PciRootBridgeInfo->RootBridge[index].Ecam.Base));
+          DEBUG ((DEBUG_INFO, "PciRootBridge->Ecam.limit %llx, \n", PciRootBridgeInfo->RootBridge[index].Ecam.Limit));
+          DEBUG ((DEBUG_INFO, "Pci Segment %x, \n", PciRootBridgeInfo->RootBridge[index].Segment));
+        }
         if (AsciiStrCmp (TempStr, "bus-range") == 0) {
           DEBUG ((DEBUG_INFO, "  Found bus-range Property TempLen (%08X)\n", TempLen));
 
