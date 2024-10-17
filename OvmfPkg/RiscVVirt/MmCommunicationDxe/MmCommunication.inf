@@ -46,12 +46,14 @@
 [Protocols]
   gEfiMmCommunication2ProtocolGuid              ## PRODUCES
   gFdtClientProtocolGuid                        ## CONSUMES
+  gEfiSmmVariableProtocolGuid                   ## CONSUMES
 
 [Guids]
   gEfiEndOfDxeEventGroupGuid
   gEfiEventExitBootServicesGuid
   gEfiEventReadyToBootGuid
   gMmHestGetErrorSourceInfoGuid
+  gVarCheckPolicyLibMmiHandlerGuid
 
 [Depex]
   gEfiCpuArchProtocolGuid AND

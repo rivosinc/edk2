@@ -67,7 +67,13 @@ struct GuidMapping {
 STATIC struct GuidMapping  GuidChidArray[] = {
   {
     MM_STR, &gMmHestGetErrorSourceInfoGuid, 0
-  }
+  },
+  {
+    MM_STR, &gEfiSmmVariableProtocolGuid, 0
+  },
+  {
+    MM_STR, &gVarCheckPolicyLibMmiHandlerGuid, 0
+  }  
 };
 
 /**
