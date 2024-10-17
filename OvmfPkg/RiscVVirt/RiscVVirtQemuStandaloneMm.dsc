@@ -100,6 +100,10 @@
   gEfiMdePkgTokenSpaceGuid.PcdMaximumGuidedExtractHandler|0x2
   gUefiOvmfPkgTokenSpaceGuid.PcdOvmfFdBaseAddress|0x22000000
   gUefiOvmfPkgTokenSpaceGuid.PcdOvmfFirmwareFdSize|0x01000000
+  gEfiMdeModulePkgTokenSpaceGuid.PcdMaxVariableSize|0x2000
+  gEfiSecurityPkgTokenSpaceGuid.PcdUserPhysicalPresence|TRUE
+  gEfiMdeModulePkgTokenSpaceGuid.PcdMaxAuthVariableSize|0x2800
+
   gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableBase|0x22000000
   gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableSize|0x00040000
   gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingBase|0x22040000
