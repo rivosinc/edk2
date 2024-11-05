@@ -1,0 +1,31 @@
+# @file
+# Provides implementation of the library to communicate over SBI SSE on RISCV architecture
+#
+# @copyright
+# Copyright (c) Rivos Inc. All rights reserved.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  INF_VERSION                   = 0x0001001A
+  BASE_NAME                     = RiscvSseLib
+  MODULE_UNI_FILE               = RiscvSseLib.uni
+  FILE_GUID                     = bf23b3c0-9cf2-11ef-9a72-cf5b2b9ddb13
+  MODULE_TYPE                   = MM_STANDALONE
+  VERSION_STRING                = 1.0
+  PI_SPECIFICATION_VERSION      = 0x00010032
+  LIBRARY_CLASS                 = RiscvSseLib|MM_STANDALONE MM_CORE_STANDALONE
+
+[Packages]
+  StandaloneMmPkg/StandaloneMmPkg.dec
+  MdePkg/MdePkg.dec
+
+[Sources]
+  StandaloneMmRiscvSse.c
+  StandaloneMmRiscvSseEntry.S
+
+[LibraryClasses]
+  DebugLib
+  BaseMemoryLib
+  RiscVSbiLib
