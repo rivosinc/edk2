@@ -13,6 +13,7 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 
 #include <StandaloneMmCpu.h>
 #include <Library/RiscV64/StandaloneMmCoreEntryPoint.h>
+#include <Library/RiscV64/StandaloneMmRiscvSse.h>
 
 #include <PiPei.h>
 #include <Guid/MmramMemoryReserve.h>
@@ -148,8 +149,13 @@ PrintRpmiMessageHeader (
   DEBUG ((DEBUG_VERBOSE, "  DataLen: 0x%04x\n", Header->DataLen));
 }
 
-STATIC VOID PrepareRpmiHeader(RPMI_MESSAGE_HEADER *Hdr, UINT8 Msg) {
-  Hdr->Flags = RPMI_MSG_NORMAL_REQUEST;
+STATIC VOID
+PrepareRpmiHeader (
+  RPMI_MESSAGE_HEADER  *Hdr,
+  UINT8                Msg
+  )
+{
+  Hdr->Flags          = RPMI_MSG_NORMAL_REQUEST;
   Hdr->ServiceGroupId = RPMI_SRVGRP_REQUEST_FORWARD;
   Hdr->ServiceId      = Msg;
 }
@@ -256,44 +262,40 @@ DelegatedEventLoop (
   RPMI_SMM_MSG_COMM_ARGS  MmReqFwdResp;
   UINTN                   InputBuffer = (UINTN)NsCommBufMmramRange->PhysicalStart;
 
-  //  UINTN       SmmMsgLen, SmmRespLen;
-  SendMMComplete (ChannelId, EventCompleteSvcArgs);
+  RetrieveReqFwdMessage (ChannelId, &MmReqFwdResp);
+  PrintReqfwdRetrieveResp (&MmReqFwdResp);
 
-  while (TRUE) {
-    RetrieveReqFwdMessage (ChannelId, &MmReqFwdResp);
-    PrintReqfwdRetrieveResp (&MmReqFwdResp);
+  InputBuffer = InputBuffer + MmReqFwdResp.mm_data.Arg1;
+  Status      = CpuDriverEntryPoint (
+                  0,
+                  CpuId,
+                  InputBuffer
+                  );
 
-    InputBuffer = InputBuffer + MmReqFwdResp.mm_data.Arg1;
-    Status      = CpuDriverEntryPoint (
-                    0,
-                    CpuId,
-                    InputBuffer
-                    );
-
-    switch (Status) {
-      case EFI_SUCCESS:
-        SmmStatus = RISCV_SMM_RET_SUCCESS;
-        break;
-      case EFI_INVALID_PARAMETER:
-        SmmStatus = RISCV_SMM_RET_INVALID_PARAMS;
-        break;
-      case EFI_ACCESS_DENIED:
-        SmmStatus = RISCV_SMM_RET_DENIED;
-        break;
-      case EFI_OUT_OF_RESOURCES:
-        SmmStatus = RISCV_SMM_RET_NO_MEMORY;
-        break;
-      case EFI_UNSUPPORTED:
-        SmmStatus = RISCV_SMM_RET_NOT_SUPPORTED;
-        break;
-      default:
-        SmmStatus = RISCV_SMM_RET_NOT_SUPPORTED;
-        break;
-    }
-
-    EventCompleteSvcArgs->mm_data.Arg0 = SmmStatus;
-    SendMMComplete (ChannelId, EventCompleteSvcArgs);
+  switch (Status) {
+    case EFI_SUCCESS:
+      SmmStatus = RISCV_SMM_RET_SUCCESS;
+      break;
+    case EFI_INVALID_PARAMETER:
+      SmmStatus = RISCV_SMM_RET_INVALID_PARAMS;
+      break;
+    case EFI_ACCESS_DENIED:
+      SmmStatus = RISCV_SMM_RET_DENIED;
+      break;
+    case EFI_OUT_OF_RESOURCES:
+      SmmStatus = RISCV_SMM_RET_NO_MEMORY;
+      break;
+    case EFI_UNSUPPORTED:
+      SmmStatus = RISCV_SMM_RET_NOT_SUPPORTED;
+      break;
+    default:
+      SmmStatus = RISCV_SMM_RET_NOT_SUPPORTED;
+      break;
   }
+
+  EventCompleteSvcArgs->mm_data.Arg0 = SmmStatus;
+  DEBUG ((DEBUG_INFO, "Status %x\n", SmmStatus));
+  SendMMComplete (ChannelId, EventCompleteSvcArgs);
 }
 
 /**
@@ -324,6 +326,103 @@ InitRiscVSmmArgs (
 
  
   InitMmFoundationSmmArgs->mm_data.Arg1       = 0;
+}
+
+typedef struct {
+  IN UINTN                    CpuId;
+  IN UINTN                    MpxyChannelId;
+  IN RPMI_SMM_MSG_CMPL_CMD    *SmmMessageCmd;
+} RISCV_SSE_MM_CONTEXT;
+
+/**
+  SSE callback handler.
+
+  This function is invoked when an SSE event is triggered. It handles the event
+  by calling the `DelegatedEventLoop` function with the necessary context.
+
+  @param[in] EventId    The ID of the triggered SSE event.
+  @param[in] Arg        Pointer to the RISCV_SSE_MM_CONTEXT structure that contains
+                        the context information for the event.
+
+**/
+STATIC
+VOID
+RiscVSseCallback (
+  IN UINT32  EventId,
+  IN VOID    *Arg
+  )
+{
+  RISCV_SSE_MM_CONTEXT  *Context = Arg;
+
+  DelegatedEventLoop (Context->CpuId, Context->MpxyChannelId, Context->SmmMessageCmd);
+}
+
+/**
+  Initialize SSE (Secure Supervisor Execution) support.
+
+  This function initializes the SSE context for a given CPU and MPXY channel. It
+  retrieves the SSE event ID, allocates and populates a context structure, and
+  registers the SSE event callback. Finally, it enables the SSE event.
+
+  @param[in] CpuId          The ID of the CPU to initialize SSE for.
+  @param[in] MpxyChannelId  The MPXY Channel ID used for communication.
+  @param[in] SmmMessageCmd  Pointer to the RPMI_SMM_MSG_CMPL_CMD structure containing
+                            the message command to use for SSE events.
+
+  @retval None              This function does not return a value. It asserts on failure.
+**/
+STATIC
+VOID
+InitRiscVSse (
+  IN UINTN                  CpuId,
+  IN UINTN                  MpxyChannelId,
+  IN RPMI_SMM_MSG_CMPL_CMD  *SmmMessageCmd
+  )
+{
+  EFI_STATUS            Status;
+  UINT32                SseEventId;
+  RISCV_SSE_MM_CONTEXT  *Context;
+
+  if (SbiMpxyReadChannelAttrs (MpxyChannelId, MpxyChanAttrSseEventId, 1, &SseEventId) != EFI_SUCCESS) {
+    DEBUG (
+      (
+       DEBUG_ERROR,
+       "InitRiscVSse: "
+       "Failed to get SSE event id\n"
+      )
+      );
+    ASSERT (0);
+  }
+
+  Context = AllocateZeroPool (sizeof (*Context));
+  ASSERT (Context != NULL);
+
+  Context->CpuId         = CpuId;
+  Context->MpxyChannelId = MpxyChannelId;
+  Context->SmmMessageCmd = SmmMessageCmd;
+  Status                 = SbiSseRegisterEvent (SseEventId, (VOID *)Context, RiscVSseCallback);
+  if (Status != EFI_SUCCESS) {
+    DEBUG (
+      (
+       DEBUG_ERROR,
+       "InitRiscVSse: "
+       "Failed to register SSE event\n"
+      )
+      );
+    ASSERT (0);
+  }
+
+  Status = SbiSseEnableEvent (SseEventId);
+  if (Status != EFI_SUCCESS) {
+    DEBUG (
+      (
+       DEBUG_ERROR,
+       "InitRiscVSse: "
+       "Failed to enable SSE event\n"
+      )
+      );
+    ASSERT (0);
+  }
 }
 
 /** Returns the HOB data for the matching HOB GUID.
@@ -377,7 +476,7 @@ CModuleEntryPoint (
   )
 {
   EFI_RISCV_SMM_PAYLOAD_INFO  *PayloadBootInfo;
-  RPMI_SMM_MSG_CMPL_CMD       InitMmFoundationSmmArgs;
+  RPMI_SMM_MSG_CMPL_CMD       *InitMmFoundationSmmArgs;
   VOID                        *HobStart;
   EFI_STATUS                  Status;
 
@@ -398,8 +497,11 @@ CModuleEntryPoint (
 
   DEBUG ((DEBUG_INFO, "Cpu Driver EP %p\n", (VOID *)CpuDriverEntryPoint));
 
-  ZeroMem (&InitMmFoundationSmmArgs, sizeof (InitMmFoundationSmmArgs));
-  InitRiscVSmmArgs (PayloadBootInfo->MpxyChannelId, &InitMmFoundationSmmArgs);
+  InitMmFoundationSmmArgs = AllocateZeroPool (sizeof (*InitMmFoundationSmmArgs));
+  ASSERT (InitMmFoundationSmmArgs != NULL);
+
+  InitRiscVSmmArgs (PayloadBootInfo->MpxyChannelId, InitMmFoundationSmmArgs);
+  InitRiscVSse (CpuId, PayloadBootInfo->MpxyChannelId, InitMmFoundationSmmArgs);
 
   // Find the descriptor that contains the whereabouts of the buffer for
   // communication with the Normal world.
@@ -415,5 +517,7 @@ CModuleEntryPoint (
   DEBUG ((DEBUG_INFO, "mNsCommBuffer.PhysicalStart - 0x%lx\n", (UINTN)NsCommBufMmramRange->PhysicalStart));
   DEBUG ((DEBUG_INFO, "mNsCommBuffer.PhysicalSize - 0x%lx\n", (UINTN)NsCommBufMmramRange->PhysicalSize));
 
-  DelegatedEventLoop (CpuId, PayloadBootInfo->MpxyChannelId, &InitMmFoundationSmmArgs);
+  //  UINTN       SmmMsgLen, SmmRespLen;
+  SendMMComplete (PayloadBootInfo->MpxyChannelId, InitMmFoundationSmmArgs);
+  ASSERT (0);
 }
