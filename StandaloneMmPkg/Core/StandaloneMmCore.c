@@ -873,7 +873,7 @@ StandaloneMmMain (
     DEBUG ((DEBUG_INFO, "MmiHandlerRegister - GUID %g - Status %d\n", mMmCoreMmiHandlers[Index].HandlerType, Status));
   }
 
-  MmCorePrepareCommunicationBuffer ();
+  //  MmCorePrepareCommunicationBuffer ();
 
   //
   // Install Loaded Image Protocol form MM Core
