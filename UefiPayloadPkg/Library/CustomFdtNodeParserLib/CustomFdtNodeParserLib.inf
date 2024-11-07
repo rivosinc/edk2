@@ -27,6 +27,7 @@
   MdePkg/MdePkg.dec
   MdeModulePkg/MdeModulePkg.dec
   UefiPayloadPkg/UefiPayloadPkg.dec
+  EmbeddedPkg/EmbeddedPkg.dec
 
 [LibraryClasses]
   BaseMemoryLib
@@ -42,6 +43,7 @@
   gUniversalPayloadAcpiTableGuid
   gUniversalPayloadSmbios3TableGuid
   gEfiHobMemoryAllocModuleGuid
+  gFdtHobGuid
 
 [Pcd]
   gUefiPayloadPkgTokenSpaceGuid.PcdHandOffFdtEnable
