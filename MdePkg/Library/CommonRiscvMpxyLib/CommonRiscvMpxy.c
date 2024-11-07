@@ -16,6 +16,7 @@
 #include <Library/PcdLib.h>
 #include <Library/SafeIntLib.h>
 #include <Library/BaseRiscVSbiLib.h>
+#include <Library/DxeRiscvMpxy.h>
 
 #define INVAL_PHYS_ADDR  (-1U)
 #define INVALID_CHAN     -1
@@ -29,20 +30,6 @@
 #define LLE_TO_CPU(x)  (x)
 #define CPU_TO_LLE(x)  (x)
 #endif
-
-enum {
-  MpxyChanAttrProtId,
-  MpxyChanAttrProtVersion,
-  MpxyChanAttrMsgDataMaxLen,
-  MpxyChanAttrMsgSendTimeout,
-  MpxyChanAttrCapability,
-  MpxyChanAttrMsiAddrLow,
-  MpxyChanAttrMsiAddrHigh,
-  MpxyChanAttrMsiData,
-  MpxyChanAttrSseEventId,
-  MpxyChanAttrEventStateControl,
-  MpxyChanAttrMax
-};
 
 STATIC VOID     *gNonChanTempShmem  = NULL;
 STATIC VOID     *gShmemVirt         = NULL;

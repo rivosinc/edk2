@@ -9,6 +9,21 @@
 #ifndef SBI_MPXY_H_
 #define SBI_MPXY_H_
 
+typedef enum {
+  MpxyChanAttrProtId,
+  MpxyChanAttrProtVersion,
+  MpxyChanAttrMsgDataMaxLen,
+  MpxyChanAttrMsgSendTimeout,
+  MpxyChanAttrCapability,
+  MpxyChanAttrMsiAddrLow,
+  MpxyChanAttrMsiAddrHigh,
+  MpxyChanAttrMsiData,
+  MpxyChanAttrSseEventId,
+  MpxyChanAttrEventStateControl,
+  MpxyChanAttrMax
+} SBI_MPXY_CHAN_ATTR;
+
+
 /**
   Get the list of channels available on MPXY.
 
