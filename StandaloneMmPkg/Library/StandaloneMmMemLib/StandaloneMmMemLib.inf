@@ -37,7 +37,7 @@
 [Sources.IA32, Sources.X64]
   X86StandaloneMmMemLibInternal.c
 
-[Sources.AARCH64, Sources.ARM]
+[Sources.AARCH64, Sources.ARM, Sources.RISCV64]
   ArmStandaloneMmMemLibInternal.c
 
 [Packages]
