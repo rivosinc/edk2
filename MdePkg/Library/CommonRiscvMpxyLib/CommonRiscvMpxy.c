@@ -20,6 +20,8 @@
 #define INVAL_PHYS_ADDR  (-1U)
 #define INVALID_CHAN     -1
 
+#define MPXY_SHMEM_SIZE  4096
+
 #if defined (__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__  /* CPU(little-endian) */
 #define LLE_TO_CPU(x)  (SwapBytes64(x))
 #define CPU_TO_LLE(x)  (SwapBytes64(x))
@@ -311,7 +313,23 @@ SbiMpxyChannelOpen (
   EFI_STATUS  Status;
 
   if (SbiMpxyShmemInitialized () == FALSE) {
-    return (EFI_UNSUPPORTED);
+    Status = SbiProbeExtension (SBI_EXT_MPXY);
+    ASSERT_EFI_ERROR (Status);
+
+    //
+    // Allocate memory to be shared with OpenSBI for initial MPXY communications
+    // untils channels are initialized by their respective drivers.
+    //
+    gNonChanTempShmem = AllocateAlignedPages (
+                          EFI_SIZE_TO_PAGES (MPXY_SHMEM_SIZE),
+                          MPXY_SHMEM_SIZE // Align
+                          );
+
+    if (gNonChanTempShmem == NULL) {
+      return (EFI_OUT_OF_RESOURCES);
+    }
+
+    gMpxyLibInitialized = TRUE;
   }
 
   Status = SbiMpxyReadChannelAttrs (
@@ -361,7 +379,10 @@ SbiMpxyChannelOpen (
       }
 
       /* Free the previous memory */
-      FreeAlignedPages(gShmemVirt, gNrShmemPages);
+      if (gNrShmemPages) {
+        FreeAlignedPages (gShmemVirt, gNrShmemPages);
+      }
+
       /* Save the new shared memory */
       gShmemVirt    = SbiShmem;
       gNrShmemPages = NrEfiPages;
@@ -469,49 +490,10 @@ SbiMpxySendMessage (
       (const VOID *)Phys,
       Ret.Value
       );
+    if (ResponseLen) {
+      *ResponseLen = Ret.Value;
+    }
   }
 
   return TranslateError (Ret.Error);
-}
-
-/**
-  Constructor allocates the global memory to store the registered guid and Handler list.
-
-  @param  ImageHandle   The firmware allocated handle for the EFI image.
-  @param  SystemTable   A pointer to the EFI System Table.
-
-  @retval  RETURN_SUCCESS            Allocated the global memory space to store guid and function tables.
-  @retval  RETURN_OUT_OF_RESOURCES   Not enough memory to allocate.
-**/
-RETURN_STATUS
-EFIAPI
-SbiMpxyLibConstructor (
-  IN EFI_HANDLE        ImageHandle,
-  IN EFI_SYSTEM_TABLE  *SystemTable
-  )
-{
-#define MPXY_SHMEM_SIZE 4096
-
-  EFI_STATUS                   Status;
-
-  Status = SbiProbeExtension (SBI_EXT_MPXY);
-
-  ASSERT_EFI_ERROR (Status);
-
-  //
-  // Allocate memory to be shared with OpenSBI for initial MPXY communications
-  // untils channels are initialized by their respective drivers.
-  //
-  gNonChanTempShmem = AllocateAlignedPages (
-                        EFI_SIZE_TO_PAGES (MPXY_SHMEM_SIZE),
-                        MPXY_SHMEM_SIZE // Align
-                        );
-
-  if (gNonChanTempShmem == NULL) {
-    return (0);
-  }
-
-  gMpxyLibInitialized = TRUE;
-
-  return (0);
 }
