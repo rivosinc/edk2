@@ -26,14 +26,14 @@
 #include <Library/DxeRiscvMpxy.h>
 #include <Library/DxeRiscvRasAgentClient.h>
 
-EFI_EVENT                      mHestReadyToBootEvent;
-UINTN                          mHestTableKey = 0;
-BOOLEAN                        mAcpiHestInstalled            = FALSE;
-BOOLEAN                        mAcpiHestStatusChanged        = FALSE;
-BOOLEAN                        mAcpiHestBufferChanged        = FALSE;
+EFI_EVENT  mHestReadyToBootEvent;
+UINTN      mHestTableKey          = 0;
+BOOLEAN    mAcpiHestInstalled     = FALSE;
+BOOLEAN    mAcpiHestStatusChanged = FALSE;
+BOOLEAN    mAcpiHestBufferChanged = FALSE;
 
-#define STATUS_BLOCK_SIZE      1024
-#define MPXY_SHMEM_SIZE        4096
+#define STATUS_BLOCK_SIZE  1024
+#define MPXY_SHMEM_SIZE    4096
 
 //
 // ACPI Hardware Error Source Table template
@@ -43,7 +43,7 @@ EFI_ACPI_6_5_HARDWARE_ERROR_SOURCE_TABLE_HEADER  mHestTemplate = {
     EFI_ACPI_6_5_HARDWARE_ERROR_SOURCE_TABLE_SIGNATURE,
     sizeof (EFI_ACPI_6_5_HARDWARE_ERROR_SOURCE_TABLE_HEADER),
     EFI_ACPI_6_5_HARDWARE_ERROR_SOURCE_TABLE_REVISION, // Revision
-    0x00,                               // Checksum will be updated at runtime
+    0x00,                                              // Checksum will be updated at runtime
     //
     // It is expected that these values will be updated at EntryPoint.
     //
@@ -71,17 +71,18 @@ HestReadyToBootEventNotify (
   IN VOID       *Context
   )
 {
-  EFI_STATUS               Status;
-  EFI_ACPI_TABLE_PROTOCOL  *AcpiTableProtocol;
-  EFI_ACPI_DESCRIPTION_HEADER  *Header;
-  VOID *ErrDesc;
-  UINT32 NumSources, *ErrSources, ErrDescSize;
-  INTN i;
-  VOID *HestTable;
-  UINT32 HestPages, HestTableSize;
-  UINTN DescriptorType;
-  EFI_ACPI_6_5_GENERIC_HARDWARE_ERROR_SOURCE_VERSION_2_STRUCTURE *BaseErrSrcStructure, *tESS;
-#define HEST_TO_BASE_ERROR_STRUCTURE(_table)                            \
+  EFI_STATUS                                                      Status;
+  EFI_ACPI_TABLE_PROTOCOL                                         *AcpiTableProtocol;
+  EFI_ACPI_DESCRIPTION_HEADER                                     *Header;
+  VOID                                                            *ErrDesc;
+  UINT32                                                          NumSources, *ErrSources, ErrDescSize;
+  INTN                                                            i;
+  VOID                                                            *HestTable;
+  UINT32                                                          HestPages, HestTableSize;
+  UINTN                                                           DescriptorType;
+  EFI_ACPI_6_5_GENERIC_HARDWARE_ERROR_SOURCE_VERSION_2_STRUCTURE  *BaseErrSrcStructure, *tESS;
+
+  #define HEST_TO_BASE_ERROR_STRUCTURE(_table)                            \
   (EFI_ACPI_6_5_GENERIC_HARDWARE_ERROR_SOURCE_VERSION_2_STRUCTURE *)    \
     ((UINT8 *)_table +                                                  \
      sizeof(typeof(EFI_ACPI_6_5_HARDWARE_ERROR_SOURCE_TABLE_HEADER)));
@@ -108,9 +109,9 @@ HestReadyToBootEventNotify (
                                   AcpiTableProtocol,
                                   mHestTableKey
                                   );
-      if (EFI_ERROR (Status)) {
-        return;
-      }
+    if (EFI_ERROR (Status)) {
+      return;
+    }
   }
 
   // Initialize the RAS agent client library.
@@ -120,13 +121,13 @@ HestReadyToBootEventNotify (
   }
 
   // Fetch the number of hardware error sources available
-  Status = RacGetNumberErrorSources(&NumSources);
+  Status = RacGetNumberErrorSources (&NumSources);
   if (EFI_ERROR (Status)) {
     return;
   }
 
   // Fetch the unique source ID for each error source.
-  Status = RacGetErrorSourceIDList(&ErrSources, &NumSources);
+  Status = RacGetErrorSourceIDList (&ErrSources, &NumSources);
   if (EFI_ERROR (Status)) {
     return;
   }
@@ -134,25 +135,28 @@ HestReadyToBootEventNotify (
   mHestTemplate.ErrorSourceCount = NumSources;
 
   // Allocate memory for all the error source descriptors
-  HestTableSize = sizeof(mHestTemplate) +
-    sizeof(EFI_ACPI_6_5_GENERIC_HARDWARE_ERROR_SOURCE_VERSION_2_STRUCTURE)
-    * NumSources;
-  HestPages = EFI_SIZE_TO_PAGES(HestTableSize);
-  HestTable = AllocateAlignedPages(HestPages, 4096);
+  HestTableSize = sizeof (mHestTemplate) +
+                  sizeof (EFI_ACPI_6_5_GENERIC_HARDWARE_ERROR_SOURCE_VERSION_2_STRUCTURE)
+                  * NumSources;
+  HestPages = EFI_SIZE_TO_PAGES (HestTableSize);
+  HestTable = AllocateAlignedPages (HestPages, 4096);
 
   if (HestTable == NULL) {
     return;
   }
 
-  CopyMem (HestTable, &mHestTemplate, sizeof(mHestTemplate));
+  CopyMem (HestTable, &mHestTemplate, sizeof (mHestTemplate));
 
-  tESS = BaseErrSrcStructure = HEST_TO_BASE_ERROR_STRUCTURE(HestTable);
+  tESS = BaseErrSrcStructure = HEST_TO_BASE_ERROR_STRUCTURE (HestTable);
 
   for (i = 0; i < NumSources; i++) {
-    Status = RacGetErrorSourceDescriptor (ErrSources[i],
-               &DescriptorType, &ErrDesc, &ErrDescSize
+    Status = RacGetErrorSourceDescriptor (
+               ErrSources[i],
+               &DescriptorType,
+               &ErrDesc,
+               &ErrDescSize
                );
-    if (EFI_ERROR(Status)) {
+    if (EFI_ERROR (Status)) {
       return;
     }
 
@@ -162,7 +166,7 @@ HestReadyToBootEventNotify (
     tESS++;
   }
 
-  Header = &((typeof(mHestTemplate) *)HestTable)->Header;
+  Header         = &((typeof(mHestTemplate) *) HestTable)->Header;
   Header->Length = HestTableSize;
   //
   // Update Checksum in Hest Table
@@ -187,7 +191,7 @@ HestReadyToBootEventNotify (
     return;
   }
 
-  mAcpiHestInstalled     = TRUE;
+  mAcpiHestInstalled = TRUE;
 }
 
 /**
