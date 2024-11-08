@@ -22,7 +22,7 @@
   LIBRARY_CLASS                  = HobLib|MM_CORE_STANDALONE
 
 #
-#  VALID_ARCHITECTURES           = X64 AARCH64 ARM
+#  VALID_ARCHITECTURES           = X64 AARCH64 ARM RISCV64
 #
 [Sources.common]
   Common.c
@@ -30,7 +30,7 @@
 [Sources.X64]
   X64/StandaloneMmCoreHobLib.c
 
-[Sources.AARCH64, Sources.ARM]
+[Sources.AARCH64, Sources.ARM, Sources.RISCV64]
   Arm/StandaloneMmCoreHobLib.c
   Arm/StandaloneMmCoreHobLibInternal.c
 
