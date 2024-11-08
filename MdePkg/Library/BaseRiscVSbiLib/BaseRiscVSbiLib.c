@@ -253,15 +253,18 @@ SetFirmwareContextPointer (
 **/
 EFI_STATUS
 EFIAPI
-SbiProbeExtension(
-  IN UINTN Extension)
+SbiProbeExtension (
+  IN UINTN  Extension
+  )
 {
   SBI_RET  Ret;
+
   Ret = SbiCall (
           SBI_EXT_BASE,
           SBI_EXT_BASE_PROBE_EXT,
           1,
-          Extension);
+          Extension
+          );
 
   return TranslateError (Ret.Error);
 }

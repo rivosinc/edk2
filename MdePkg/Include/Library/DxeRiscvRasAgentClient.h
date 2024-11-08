@@ -14,9 +14,9 @@ typedef enum {
   NUM_ERR_DESC_TYPES
 } ErrorDescriptorType;
 
-#define ERROR_DESCRIPTOR_TYPE_SHIFT       4
-#define MAX_ERROR_DESCRIPTOR_TYPES        (0x1UL << ERROR_DESCRIPTOR_TYPE_SHIFT)
-#define ERROR_DESCRIPTOR_TYPE_MASK        (MAX_ERROR_DESCRIPTOR_TYPES - 1)
+#define ERROR_DESCRIPTOR_TYPE_SHIFT  4
+#define MAX_ERROR_DESCRIPTOR_TYPES   (0x1UL << ERROR_DESCRIPTOR_TYPE_SHIFT)
+#define ERROR_DESCRIPTOR_TYPE_MASK   (MAX_ERROR_DESCRIPTOR_TYPES - 1)
 
 /**
   Initialize the RAS agent client
@@ -39,8 +39,8 @@ RacInit (
 **/
 EFI_STATUS
 EFIAPI
-RacGetNumberErrorSources(
-  OUT UINT32 *NumErrorSources
+RacGetNumberErrorSources (
+  OUT UINT32  *NumErrorSources
   );
 
 /**
@@ -54,9 +54,9 @@ RacGetNumberErrorSources(
 **/
 EFI_STATUS
 EFIAPI
-RacGetErrorSourceIDList(
-  OUT UINT32 **ErrorSourceList,
-  OUT UINT32 *NumSources
+RacGetErrorSourceIDList (
+  OUT UINT32  **ErrorSourceList,
+  OUT UINT32  *NumSources
   );
 
 /**
@@ -72,11 +72,11 @@ RacGetErrorSourceIDList(
 **/
 EFI_STATUS
 EFIAPI
-RacGetErrorSourceDescriptor(
-  IN UINT32 SourceID,
-  OUT UINTN *DescriptorType,
-  OUT VOID **ErrorDescriptor,
-  OUT UINT32 *ErrorDescriptorSize
+RacGetErrorSourceDescriptor (
+  IN UINT32   SourceID,
+  OUT UINTN   *DescriptorType,
+  OUT VOID    **ErrorDescriptor,
+  OUT UINT32  *ErrorDescriptorSize
   );
 
 #endif

@@ -183,8 +183,8 @@ SetFirmwareContextPointer (
 **/
 EFI_STATUS
 EFIAPI
-SbiProbeExtension(
-  IN UINTN Extension
+SbiProbeExtension (
+  IN UINTN  Extension
   );
 
 /**
