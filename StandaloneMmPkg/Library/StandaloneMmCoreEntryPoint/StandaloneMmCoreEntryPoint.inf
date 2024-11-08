@@ -2,6 +2,7 @@
 # Module entry point library for DXE core.
 #
 # Copyright (c) 2017 - 2021, Arm Ltd. All rights reserved.<BR>
+# Copyright (c) 2023, Intel Corporation. All rights reserved.<BR>
 #
 #  SPDX-License-Identifier: BSD-2-Clause-Patent
 #
@@ -18,13 +19,18 @@
   LIBRARY_CLASS                  = StandaloneMmCoreEntryPoint|MM_CORE_STANDALONE
 
 #
-#  VALID_ARCHITECTURES           = IA32 X64 IPF EBC (EBC is for build only)
+#  VALID_ARCHITECTURES           = IA32 X64 RISCV64 IPF EBC (EBC is for build only)
 #
 
 [Sources.AARCH64, Sources.ARM]
   Arm/StandaloneMmCoreEntryPoint.c
   Arm/SetPermissions.c
   Arm/CreateHobList.c
+
+[Sources.RISCV64]
+  RiscV64/StandaloneMmCoreEntryPoint.c
+  RiscV64/CreateHobList.c
+  RiscV64/EntryPoint.S
 
 [Sources.X64]
   X64/StandaloneMmCoreEntryPoint.c
@@ -44,6 +50,10 @@
 [LibraryClasses.ARM, LibraryClasses.AARCH64]
   StandaloneMmMmuLib
   ArmSvcLib
+
+[LibraryClasses.RISCV64]
+  RiscVSbiLib
+  CommonRiscvMpxyLib
 
 [Guids]
   gMpInformationHobGuid
