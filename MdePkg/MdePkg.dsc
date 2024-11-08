@@ -203,7 +203,7 @@
   MdePkg/Library/BaseRiscVSbiLib/BaseRiscVSbiLib.inf
   MdePkg/Library/BaseSerialPortLibRiscVSbiLib/BaseSerialPortLibRiscVSbiLib.inf
   MdePkg/Library/BaseSerialPortLibRiscVSbiLib/BaseSerialPortLibRiscVSbiLibRam.inf
-  MdePkg/Library/DxeRiscvMpxyLib/DxeRiscvMpxy.inf
+  MdePkg/Library/CommonRiscvMpxyLib/DxeRiscvMpxy.inf
   MdePkg/Library/DxeRiscvRasAgentClientLib/DxeRiscvRasAgentClientLib.inf
 
 [Components.LOONGARCH64]

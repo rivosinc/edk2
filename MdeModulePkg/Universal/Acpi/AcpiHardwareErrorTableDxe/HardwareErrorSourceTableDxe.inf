@@ -39,7 +39,7 @@
   PcdLib
   SafeIntLib
   RiscVSbiLib
-  DxeRiscvMpxyLib
+  CommonRiscvMpxyLib
   DxeRiscvRasAgentClientLib
 
 [Protocols]
