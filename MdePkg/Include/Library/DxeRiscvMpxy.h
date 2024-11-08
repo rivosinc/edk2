@@ -22,11 +22,11 @@
 **/
 EFI_STATUS
 EFIAPI
-SbiMpxyGetChannelList(
-  IN  UINTN StartIndex,
-  OUT UINTN *ChannelList,
-  OUT UINTN *Remaining,
-  OUT UINTN *Returned
+SbiMpxyGetChannelList (
+  IN  UINTN  StartIndex,
+  OUT UINTN  *ChannelList,
+  OUT UINTN  *Remaining,
+  OUT UINTN  *Returned
   );
 
 /**
@@ -42,11 +42,11 @@ SbiMpxyGetChannelList(
 
 EFI_STATUS
 EFIAPI
-SbiMpxyReadChannelAttrs(
-  IN UINTN ChannelId,
-  IN UINT32 BaseAttrId,
-  IN UINT32 NrAttrs,
-  OUT UINT32 *Attrs
+SbiMpxyReadChannelAttrs (
+  IN UINTN    ChannelId,
+  IN UINT32   BaseAttrId,
+  IN UINT32   NrAttrs,
+  OUT UINT32  *Attrs
   );
 
 /**
@@ -59,8 +59,8 @@ SbiMpxyReadChannelAttrs(
 **/
 EFI_STATUS
 EFIAPI
-SbiMpxyChannelOpen(
-  IN UINTN ChannelId
+SbiMpxyChannelOpen (
+  IN UINTN  ChannelId
   );
 
 /**
@@ -72,8 +72,8 @@ SbiMpxyChannelOpen(
 **/
 EFI_STATUS
 EFIAPI
-SbiMpxyChannelClose(
-  IN UINTN ChannelId
+SbiMpxyChannelClose (
+  IN UINTN  ChannelId
   );
 
 /**
@@ -91,14 +91,13 @@ SbiMpxyChannelClose(
 **/
 EFI_STATUS
 EFIAPI
-SbiMpxySendMessage(
-  IN UINTN ChannelId,
-  IN UINTN MessageId,
-  IN VOID *Message,
-  IN UINTN MessageDataLen,
-  OUT VOID *Response,
-  OUT UINTN *ResponseLen
+SbiMpxySendMessage (
+  IN UINTN   ChannelId,
+  IN UINTN   MessageId,
+  IN VOID    *Message,
+  IN UINTN   MessageDataLen,
+  OUT VOID   *Response,
+  OUT UINTN  *ResponseLen
   );
 
 #endif
-
