@@ -28,7 +28,7 @@
   UefiBootServicesTableLib
   RiscVSbiLib
   SafeIntLib
-  DxeRiscvMpxyLib
+  CommonRiscvMpxyLib
 
 [Protocols]
   gFdtClientProtocolGuid          ## CONSUMES
