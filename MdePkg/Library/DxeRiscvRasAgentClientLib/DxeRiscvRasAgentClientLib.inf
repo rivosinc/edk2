@@ -32,6 +32,13 @@
 
 [Protocols]
   gFdtClientProtocolGuid          ## CONSUMES
+  gEfiMmCommunication2ProtocolGuid
+
+[Guids]
+  gMmHestGetErrorSourceInfoGuid
+
+[Pcd]
+  gEfiMdePkgTokenSpaceGuid.PcdMMPassThroughEnable
 
 [Depex]
   gFdtClientProtocolGuid
