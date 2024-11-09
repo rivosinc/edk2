@@ -353,6 +353,12 @@
   gUefiOvmfPkgTokenSpaceGuid.PcdOvmfSecSvsmCaaBase|0|UINT32|0x70
   gUefiOvmfPkgTokenSpaceGuid.PcdOvmfSecSvsmCaaSize|0|UINT32|0x71
 
+  # System Memory (DRAM): These PCDs define the region of in-built system memory
+  # Some platforms can get DRAM extensions, these additional regions may be
+  # declared to UEFI using separate resource descriptor HOBs
+  gUefiOvmfPkgTokenSpaceGuid.PcdMmBufferBase|0|UINT64|0x00000076
+  gUefiOvmfPkgTokenSpaceGuid.PcdMmBufferSize|0|UINT64|0x00000077
+
 [PcdsDynamic, PcdsDynamicEx]
   gUefiOvmfPkgTokenSpaceGuid.PcdEmuVariableEvent|0|UINT64|2
   gUefiOvmfPkgTokenSpaceGuid.PcdOvmfFlashVariablesEnable|FALSE|BOOLEAN|0x10
