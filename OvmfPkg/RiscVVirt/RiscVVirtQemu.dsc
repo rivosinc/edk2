@@ -172,6 +172,8 @@
   gEfiSecurityPkgTokenSpaceGuid.PcdOptionRomImageVerificationPolicy|0x04
   gEfiSecurityPkgTokenSpaceGuid.PcdFixedMediaImageVerificationPolicy|0x04
   gEfiSecurityPkgTokenSpaceGuid.PcdRemovableMediaImageVerificationPolicy|0x04
+  gUefiOvmfPkgTokenSpaceGuid.PcdMmBufferBase|0xFFE00000
+  gUefiOvmfPkgTokenSpaceGuid.PcdMmBufferSize|0x00200000
 !endif
 
   gEfiShellPkgTokenSpaceGuid.PcdShellFileOperationSize|0x20000
