@@ -2439,6 +2439,8 @@
   # @Prompt Time-out for a response, internal
   gEfiMdePkgTokenSpaceGuid.PcdIpmiSsifResponseRetryIntervalMicrosecond|60000|UINT32|0x00000036
 
+  gEfiMdePkgTokenSpaceGuid.PcdMMPassThroughEnable|FALSE|BOOLEAN|0x10000037
+
 [PcdsFixedAtBuild.AARCH64, PcdsPatchableInModule.AARCH64]
   ## GUID identifying the Rng algorithm implemented by CPU instruction.
   # @Prompt CPU Rng algorithm's GUID.
