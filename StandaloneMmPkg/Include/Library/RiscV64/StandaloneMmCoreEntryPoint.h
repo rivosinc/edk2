@@ -101,7 +101,7 @@ typedef struct {
 #pragma pack() // End of packed structure
 
 typedef struct {
-  RPMI_MESSAGE_HEADER    hdr;
+//  RPMI_MESSAGE_HEADER    hdr;
   UINTN                  Arg0;
   UINTN                  Arg1;
 } RISCV_SMM_MSG_COMM_ARGS;

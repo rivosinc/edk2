@@ -201,16 +201,17 @@ DelegatedEventLoop (
 {
   EFI_STATUS            Status = EFI_UNSUPPORTED;
   UINTN                 SmmStatus;
-  REQFWD_RETRIEVE_RESP  ReqFwdResp;
+  //REQFWD_RETRIEVE_RESP  ReqFwdResp;
   UINTN                 InputBuffer = (UINTN)NsCommBufMmramRange->PhysicalStart;
 
   //  UINTN       SmmMsgLen, SmmRespLen;
   SendMMComplete (ChannelId, EventCompleteSvcArgs);
 
   while (TRUE) {
-    RetrieveReqFwdMessage (ChannelId, &ReqFwdResp);
-    PrintReqfwdRetrieveResp (&ReqFwdResp);
-    InputBuffer = InputBuffer + ReqFwdResp.Offset;
+    // RetrieveReqFwdMessage (ChannelId, &ReqFwdResp);
+    // PrintReqfwdRetrieveResp (&ReqFwdResp);
+    InputBuffer = InputBuffer;
+  //  +ReqFwdResp.Offset;
     Status      = CpuDriverEntryPoint (
                     0,
                     CpuId,
@@ -315,11 +316,11 @@ InitRiscVSmmArgs (
  #endif
   InitMmFoundationSmmArgs->Arg0               = RISCV_SMM_RET_SUCCESS;
   InitMmFoundationSmmArgs->Arg1               = 0;
-  InitMmFoundationSmmArgs->hdr.DataLen        = 0;
-  InitMmFoundationSmmArgs->hdr.Flags          = 0;
-  InitMmFoundationSmmArgs->hdr.ServiceGroupId = 0;
-  InitMmFoundationSmmArgs->hdr.ServiceId      = 0;
-  InitMmFoundationSmmArgs->hdr.Token          = 0;
+  // InitMmFoundationSmmArgs->hdr.DataLen        = 0;
+  // InitMmFoundationSmmArgs->hdr.Flags          = 0;
+  // InitMmFoundationSmmArgs->hdr.ServiceGroupId = 0;
+  // InitMmFoundationSmmArgs->hdr.ServiceId      = 0;
+  // InitMmFoundationSmmArgs->hdr.Token          = 0;
 }
 
 /** Returns the HOB data for the matching HOB GUID.
