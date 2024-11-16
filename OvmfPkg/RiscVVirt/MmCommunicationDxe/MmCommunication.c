@@ -3,7 +3,6 @@
   Copyright (c) 2016-2021, Arm Limited.
   Copyright (c) 2023, Intel Corporation, All rights reserved.<BR>
   Copyright (c) 2024, Rivos Inc, All rights reserved.<BR>
-
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
@@ -57,10 +56,153 @@ STATIC EFI_HANDLE             mMmCommunicateHandle;
 STATIC MM_COMM_BUFFER         *MmCommonBuffer;
 STATIC MM_COMM_BUFFER_STATUS  *mCommunicationStatus;
 
-//
-// The MM Channel ID, the value should be loaded from device tree
-//
-STATIC UINT32  mMmChannelId = 0;
+struct GuidMapping {
+  char      NodeName[30];
+  GUID      *ServiceGuid;
+  UINT32    ChannelId;
+};
+
+#define MM_STR  "riscv,sbi-mpxy-mm"
+
+STATIC struct GuidMapping  GuidChidArray[] = {
+  {
+    MM_STR, &gMmHestGetErrorSourceInfoGuid, 0
+  }
+};
+
+/**
+  Retrieve the channel ID for a given GUID.
+
+  This function searches for a mapping between the provided GUID and a channel ID
+  in the `GuidChidArray`.
+
+  @param[in]  GuidStr     Pointer to the GUID for which the channel ID is required.
+  @param[out] ChannelId   Pointer to a variable that will receive the channel ID.
+
+  @retval EFI_SUCCESS     The channel ID was found and returned successfully.
+  @retval EFI_NO_MAPPING  No mapping for the provided GUID was found.
+**/
+STATIC
+EFI_STATUS
+EFIAPI
+GetChannelForGuid (
+  GUID        *GuidStr,
+  OUT UINT32  *ChannelId
+  )
+{
+  for (UINT8 Index = 0; Index < sizeof (GuidChidArray)/ sizeof (struct GuidMapping); Index++) {
+    if (CompareGuid (GuidChidArray[Index].ServiceGuid, GuidStr)) {
+      *ChannelId = GuidChidArray[Index].ChannelId;
+      return EFI_SUCCESS;
+    }
+  }
+
+  return EFI_NO_MAPPING;
+}
+
+/**
+  Retrieve the channel ID from the device tree (DT) for a given node name.
+
+  This function searches the device tree for a node compatible with the provided
+  string and retrieves the associated channel ID.
+
+  @param[in]  FdtClient   Pointer to the FDT client protocol.
+  @param[in]  MatchStr    String to match a compatible node in the device tree.
+  @param[out] ChannelId   Pointer to a variable that will receive the channel ID.
+
+  @retval EFI_SUCCESS     The channel ID was found and returned successfully.
+  @retval EFI_NOT_FOUND   No matching node or property was found in the device tree.
+**/
+STATIC
+EFI_STATUS
+EFIAPI
+GetDTChannelForGuid (
+  FDT_CLIENT_PROTOCOL  *FdtClient,
+  IN CHAR8             *MatchStr,
+  OUT UINT32           *ChannelId
+  )
+{
+  EFI_STATUS    Status;
+  INT32         Node;
+  CONST UINT64  *Reg;
+  UINT32        RegSize;
+
+  Status = FdtClient->FindCompatibleNode (FdtClient, MatchStr, &Node);
+  if (EFI_ERROR (Status)) {
+    DEBUG (
+      (
+       DEBUG_WARN,
+       "%a: No compatible DT node found\n",
+       __func__
+      )
+      );
+    return EFI_NOT_FOUND;
+  }
+
+  Status = FdtClient->GetNodeProperty (
+                        FdtClient,
+                        Node,
+                        "riscv,sbi-mpxy-channel-id",
+                        (CONST VOID **)&Reg,
+                        &RegSize
+                        );
+  if (EFI_ERROR (Status)) {
+    DEBUG (
+      (
+       DEBUG_WARN,
+       "%a: No 'riscv,sbi-mpxy-channel-id' compatible DT node found\n",
+       __func__
+      )
+      );
+    return EFI_NOT_FOUND;
+  } else {
+    ASSERT (RegSize == 4);
+    *ChannelId = SwapBytes32 (Reg[0]);
+    return EFI_SUCCESS;
+  }
+}
+
+/**
+  Populate channel ID information from the device tree.
+
+  This function iterates through `GuidChidArray` and attempts to retrieve channel
+  IDs from the device tree for each GUID in the array. If a mapping is found, the
+  channel ID is updated in the array.
+
+  @retval EFI_SUCCESS     All channel IDs were processed successfully.
+  @retval Other           One or more errors occurred during processing.
+**/
+STATIC
+EFI_STATUS
+EFIAPI
+FillMmMpxyChannelIdInfo (
+  )
+{
+  EFI_STATUS           Status;
+  FDT_CLIENT_PROTOCOL  *FdtClient;
+  UINT32               ChannelId;
+
+  Status = gBS->LocateProtocol (
+                  &gFdtClientProtocolGuid,
+                  NULL,
+                  (VOID **)&FdtClient
+                  );
+  ASSERT_EFI_ERROR (Status);
+
+  ChannelId = 0;
+  for (UINT8 Index = 0; Index < sizeof (GuidChidArray)/ sizeof (struct GuidMapping); Index++) {
+    Status = GetDTChannelForGuid (FdtClient, GuidChidArray[Index].NodeName, &ChannelId);
+    if (!EFI_ERROR (Status)) {
+      DEBUG ((DEBUG_INFO, "Found Channel %d for Guid Idx %d", ChannelId, Index));
+      GuidChidArray[Index].ChannelId = ChannelId;
+      ChannelId                      = 0; // Get ready for next node
+    } else {
+      DEBUG ((DEBUG_INFO, "No Channel Mapping Found Guid Idx %d", Index));
+    }
+  }
+
+  return EFI_SUCCESS;
+}
 
 /**
   Communicates with a registered handler.
@@ -106,7 +248,9 @@ MmCommunication2Communicate (
   EFI_STATUS                 Status;
   UINTN                      BufferSize;
   UINTN                      MmRespLen;
+  UINT32                     ChannelId;
 
+  ChannelId  = 0;
   Status     = EFI_ACCESS_DENIED;
   BufferSize = 0;
 
@@ -175,9 +319,15 @@ MmCommunication2Communicate (
   // comm_size_address (not used, indicated by setting to zero)
   CommunicateArgs.Arg1 = 0;
 
+  Status = GetChannelForGuid (&CommunicateHeader->HeaderGuid, &ChannelId);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_INFO, "No Channel Mapping Found For Requested Service"));
+    return Status;
+  }
+
   // Call the Standalone MM environment.
   Status = SbiMpxySendMessage (
-             mMmChannelId,
+             ChannelId,
              RISCV_MSG_ID_SMM_COMMUNICATE,
              (VOID *)&CommunicateArgs,
              sizeof (RISCV_SMM_MSG_COMM_ARGS),
@@ -231,80 +381,6 @@ MmCommunication2Communicate (
   return Status;
 }
 
-/**
-  Retrieve the RISC-V SBI MPXY channel ID from the device tree.
-
-  This function locates the FDT client protocol, searches the device tree for a
-  node compatible with given string, and retrieves the associated channel ID
-
-  @param[out] ChannelId       Pointer to a variable that will receive the channel ID.
-
-  @retval EFI_SUCCESS         The channel ID was found and returned successfully.
-  @retval EFI_NOT_FOUND       No compatible node or property was found in the device tree.
-  @retval EFI_DEVICE_ERROR    An error occurred while locating the FDT client protocol.
-  @retval EFI_INVALID_PARAMETER If the retrieved channel ID size is unexpected.
-
-**/
-STATIC
-EFI_STATUS
-EFIAPI
-GetMmMpxyChannelId (
-  OUT UINT32  *ChannelId
-  )
-{
-  EFI_STATUS           Status;
-  FDT_CLIENT_PROTOCOL  *FdtClient;
-  INT32                Node;
-  CONST UINT64         *Reg;
-  UINT32               RegSize;
-  UINT32               RegBase;
-
-  Status = gBS->LocateProtocol (
-                  &gFdtClientProtocolGuid,
-                  NULL,
-                  (VOID **)&FdtClient
-                  );
-  ASSERT_EFI_ERROR (Status);
-
-  Status = FdtClient->FindCompatibleNode (FdtClient, "riscv,sbi-mpxy-mm", &Node);
-  if (EFI_ERROR (Status)) {
-    DEBUG (
-      (
-       DEBUG_WARN,
-       "%a: No 'riscv,sbi-mpxy-mm' compatible DT node found\n",
-       __func__
-      )
-      );
-    return EFI_NOT_FOUND;
-  }
-
-  Status = FdtClient->GetNodeProperty (
-                        FdtClient,
-                        Node,
-                        "riscv,sbi-mpxy-channel-id",
-                        (CONST VOID **)&Reg,
-                        &RegSize
-                        );
-  if (EFI_ERROR (Status)) {
-    DEBUG (
-      (
-       DEBUG_WARN,
-       "%a: No 'riscv,sbi-mpxy-channel-id' compatible DT node found\n",
-       __func__
-      )
-      );
-    return EFI_NOT_FOUND;
-  }
-
-  ASSERT (RegSize == 4);
-
-  RegBase = SwapBytes32 (Reg[0]);
-
-  *ChannelId = RegBase;
-
-  return EFI_SUCCESS;
-}
-
 //
 // MM Communication Protocol instance
 //
@@ -327,6 +403,7 @@ STATIC EFI_MM_COMMUNICATION2_PROTOCOL  mMmCommunication2 = {
 STATIC
 EFI_STATUS
 GetMmCompatibility (
+  UINT8  ChannelId
   )
 {
   EFI_STATUS         Status;
@@ -336,7 +413,7 @@ GetMmCompatibility (
   UINT64             Addr;
 
   Status = SbiMpxySendMessage (
-             mMmChannelId,
+             ChannelId,
              RISCV_MSG_ID_SMM_VERSION,
              (VOID *)&MmVersionArgs,
              sizeof (MM_GET_ATTRIBUTES),
@@ -455,27 +532,31 @@ MmCommunication2Initialize (
   EFI_STATUS  Status;
   UINTN       Index;
 
-  // Check if the Mpxy channel exist
-  Status = GetMmMpxyChannelId (&mMmChannelId);
-  if (EFI_ERROR (Status)) {
-    goto ReturnErrorStatus;
-  }
+  Status = FillMmMpxyChannelIdInfo ();
 
-  if (SbiMpxyChannelOpen (mMmChannelId) != EFI_SUCCESS) {
-    DEBUG (
-      (
-       DEBUG_ERROR,
-       "InitRiscVSmmArgs: "
-       "Failed to set shared memory\n"
-      )
-      );
-    ASSERT (0);
-  }
+  for (UINT8 Index = 0; Index < sizeof (GuidChidArray)/ sizeof (struct GuidMapping); Index++) {
+    if (GuidChidArray[Index].ChannelId == 0) {
+      // TODO: Channel Id 0 is invalid. Spec??
+      continue;
+    }
 
-  // Check if we can make the MM call
-  Status = GetMmCompatibility ();
-  if (EFI_ERROR (Status)) {
-    goto ReturnErrorStatus;
+    Status = SbiMpxyChannelOpen (GuidChidArray[Index].ChannelId);
+    if (EFI_ERROR (Status)) {
+      DEBUG (
+        (
+         DEBUG_ERROR,
+         "InitRiscVSmmArgs: "
+         "Failed to set shared memory\n"
+        )
+        );
+      ASSERT (0);
+    }
+
+    // Check if we can make the MM call
+    Status = GetMmCompatibility (GuidChidArray[Index].ChannelId);
+    if (EFI_ERROR (Status)) {
+      goto ReturnErrorStatus;
+    }
   }
 
   // Install the communication protocol

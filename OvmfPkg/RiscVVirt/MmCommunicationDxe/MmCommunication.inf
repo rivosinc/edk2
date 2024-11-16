@@ -51,7 +51,7 @@
   gEfiEndOfDxeEventGroupGuid
   gEfiEventExitBootServicesGuid
   gEfiEventReadyToBootGuid
-
+  gMmHestGetErrorSourceInfoGuid
 [Pcd.common]
   gUefiOvmfPkgTokenSpaceGuid.PcdMmBufferBase
   gUefiOvmfPkgTokenSpaceGuid.PcdMmBufferSize
