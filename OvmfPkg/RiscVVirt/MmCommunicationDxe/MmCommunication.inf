@@ -51,6 +51,7 @@
   gEfiEndOfDxeEventGroupGuid
   gEfiEventExitBootServicesGuid
   gEfiEventReadyToBootGuid
+  gMmHestGetErrorSourceInfoGuid
 
 [Depex]
   gEfiCpuArchProtocolGuid AND
