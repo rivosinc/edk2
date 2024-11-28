@@ -56,6 +56,8 @@ EFI_ACPI_6_5_HARDWARE_ERROR_SOURCE_TABLE_HEADER  mHestTemplate = {
   0             // Number of error source
 };
 
+static BOOLEAN  Initialized = FALSE;
+
 /**
   Notify function for event group EFI_EVENT_GROUP_READY_TO_BOOT. This is used to
   install the Hardware Error Source Table.
@@ -87,7 +89,12 @@ HestReadyToBootEventNotify (
     ((UINT8 *)_table +                                                  \
      sizeof(typeof(EFI_ACPI_6_5_HARDWARE_ERROR_SOURCE_TABLE_HEADER)));
 
-  Header = &mHestTemplate.Header;
+  if (Initialized == TRUE) {
+    return;
+  }
+
+  Initialized = TRUE;
+  Header      = &mHestTemplate.Header;
 
   //
   // Get ACPI Table protocol.
