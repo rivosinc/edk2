@@ -48,7 +48,7 @@
   gEfiMmPeiMmramMemoryReserveGuid
   gZeroGuid
   gMpInformationHobGuid
-  gEfiStandaloneMmNonSecureBufferGuid
+  gMmCommBufferHobGuid
   gEfiMmCpuDriverEpDescriptorGuid
 
 [Depex]

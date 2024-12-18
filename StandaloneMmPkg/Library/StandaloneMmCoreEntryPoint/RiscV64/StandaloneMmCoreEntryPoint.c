@@ -260,16 +260,17 @@ DelegatedEventLoop (
   EFI_STATUS              Status = EFI_UNSUPPORTED;
   UINTN                   SmmStatus;
   RPMI_SMM_MSG_COMM_ARGS  MmReqFwdResp;
-  UINTN                   InputBuffer = (UINTN)NsCommBufMmramRange->PhysicalStart;
+// Open: Pass 0 if using pre-shared buffer. We already know the buffer location.
+//  UINTN                   InputBuffer = (UINTN)NsCommBufMmramRange->PhysicalStart;
 
   RetrieveReqFwdMessage (ChannelId, &MmReqFwdResp);
   PrintReqfwdRetrieveResp (&MmReqFwdResp);
 
-  InputBuffer = InputBuffer + MmReqFwdResp.mm_data.Arg1;
+//  InputBuffer = InputBuffer + MmReqFwdResp.mm_data.Arg1;
   Status      = CpuDriverEntryPoint (
                   0,
                   CpuId,
-                  InputBuffer
+                  0
                   );
 
   switch (Status) {
@@ -478,7 +479,7 @@ CModuleEntryPoint (
   EFI_RISCV_SMM_PAYLOAD_INFO  *PayloadBootInfo;
   RPMI_SMM_MSG_CMPL_CMD       *InitMmFoundationSmmArgs;
   VOID                        *HobStart;
-  EFI_STATUS                  Status;
+ // EFI_STATUS                  Status;
 
   PayloadBootInfo = GetAndPrintBootinformation (PayloadInfoAddress);
   if (PayloadBootInfo == NULL) {
@@ -503,19 +504,20 @@ CModuleEntryPoint (
   InitRiscVSmmArgs (PayloadBootInfo->MpxyChannelId, InitMmFoundationSmmArgs);
   InitRiscVSse (CpuId, PayloadBootInfo->MpxyChannelId, InitMmFoundationSmmArgs);
 
+  // Open: This buffer should not be required as we already have gMmCommBufferHobGuid
   // Find the descriptor that contains the whereabouts of the buffer for
   // communication with the Normal world.
-  Status = GetGuidedHobData (
-             HobStart,
-             &gEfiStandaloneMmNonSecureBufferGuid,
-             (VOID **)&NsCommBufMmramRange
-             );
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "NsCommBufMmramRange HOB data extraction failed - 0x%x\n", Status));
-  }
+  // Status = GetGuidedHobData (
+  //            HobStart,
+  //            &gEfiStandaloneMmNonSecureBufferGuid,
+  //            (VOID **)&NsCommBufMmramRange
+  //            );
+  // if (EFI_ERROR (Status)) {
+  //   DEBUG ((DEBUG_ERROR, "NsCommBufMmramRange HOB data extraction failed - 0x%x\n", Status));
+  // }
 
-  DEBUG ((DEBUG_INFO, "mNsCommBuffer.PhysicalStart - 0x%lx\n", (UINTN)NsCommBufMmramRange->PhysicalStart));
-  DEBUG ((DEBUG_INFO, "mNsCommBuffer.PhysicalSize - 0x%lx\n", (UINTN)NsCommBufMmramRange->PhysicalSize));
+  // DEBUG ((DEBUG_INFO, "mNsCommBuffer.PhysicalStart - 0x%lx\n", (UINTN)NsCommBufMmramRange->PhysicalStart));
+  // DEBUG ((DEBUG_INFO, "mNsCommBuffer.PhysicalSize (PAGES) - 0x%lx\n", (UINTN)NsCommBufMmramRange->NumberOfPages));
 
   //  UINTN       SmmMsgLen, SmmRespLen;
   SendMMComplete (PayloadBootInfo->MpxyChannelId, InitMmFoundationSmmArgs);

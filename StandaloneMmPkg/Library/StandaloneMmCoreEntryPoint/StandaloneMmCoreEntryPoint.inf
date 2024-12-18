@@ -60,7 +60,6 @@
 [Guids]
   gMpInformationHobGuid
   gEfiMmPeiMmramMemoryReserveGuid
-  gEfiStandaloneMmNonSecureBufferGuid
   gEfiMmCpuDriverEpDescriptorGuid
 
 [FeaturePcd.ARM, FeaturePcd.AARCH64]
