@@ -44,7 +44,7 @@ MmFoundationEntryRegister (
 EFI_MM_COMMUNICATE_HEADER  **PerCpuGuidedEventContext = NULL;
 
 // Descriptor with whereabouts of memory used for communication with the normal world
-EFI_MMRAM_DESCRIPTOR  mNsCommBuffer;
+//EFI_MMRAM_DESCRIPTOR  mNsCommBuffer;
 EFI_MMRAM_DESCRIPTOR  mSCommBuffer;
 
 MP_INFORMATION_HOB_DATA  *mMpInformationHobData;
@@ -64,44 +64,45 @@ STATIC EFI_MM_ENTRY_POINT  mMmEntryPoint = NULL;
   @retval   EFI_SUCCESS             Success.
   @retval   EFI_ACCESS_DENIED       Access not permitted.
 **/
-STATIC
-EFI_STATUS
-CheckBufferAddr (
-  IN UINTN  BufferAddr
-  )
-{
-  UINT64  NsCommBufferEnd;
-  UINT64  SCommBufferEnd;
-  UINT64  CommBufferEnd;
+// Open: Not sure why we need this kind of buffer check? It assumes NS and S buffers are in certain position?
+// STATIC
+// EFI_STATUS
+// CheckBufferAddr (
+//   IN UINTN  BufferAddr
+//   )
+// {
+//   UINT64  NsCommBufferEnd;
+//   UINT64  SCommBufferEnd;
+//   UINT64  CommBufferEnd;
 
-  NsCommBufferEnd = mNsCommBuffer.PhysicalStart + mNsCommBuffer.PhysicalSize;
-  SCommBufferEnd  = mSCommBuffer.PhysicalStart + mSCommBuffer.PhysicalSize;
+//   NsCommBufferEnd = mNsCommBuffer.PhysicalStart + mNsCommBuffer.PhysicalSize;
+//   SCommBufferEnd  = mSCommBuffer.PhysicalStart + mSCommBuffer.PhysicalSize;
 
-  if ((BufferAddr >= mNsCommBuffer.PhysicalStart) &&
-      (BufferAddr < NsCommBufferEnd))
-  {
-    CommBufferEnd = NsCommBufferEnd;
-  } else if ((BufferAddr >= mSCommBuffer.PhysicalStart) &&
-             (BufferAddr < SCommBufferEnd))
-  {
-    CommBufferEnd = SCommBufferEnd;
-  } else {
-    return EFI_ACCESS_DENIED;
-  }
+//   if ((BufferAddr >= mNsCommBuffer.PhysicalStart) &&
+//       (BufferAddr < NsCommBufferEnd))
+//   {
+//     CommBufferEnd = NsCommBufferEnd;
+//   } else if ((BufferAddr >= mSCommBuffer.PhysicalStart) &&
+//              (BufferAddr < SCommBufferEnd))
+//   {
+//     CommBufferEnd = SCommBufferEnd;
+//   } else {
+//     return EFI_ACCESS_DENIED;
+//   }
 
-  if ((CommBufferEnd - BufferAddr) < sizeof (EFI_MM_COMMUNICATE_HEADER)) {
-    return EFI_ACCESS_DENIED;
-  }
+//   if ((CommBufferEnd - BufferAddr) < sizeof (EFI_MM_COMMUNICATE_HEADER)) {
+//     return EFI_ACCESS_DENIED;
+//   }
 
-  // perform bounds check.
-  if ((CommBufferEnd - BufferAddr - sizeof (EFI_MM_COMMUNICATE_HEADER)) <
-      ((EFI_MM_COMMUNICATE_HEADER *)BufferAddr)->MessageLength)
-  {
-    return EFI_ACCESS_DENIED;
-  }
+//   // perform bounds check.
+//   if ((CommBufferEnd - BufferAddr - sizeof (EFI_MM_COMMUNICATE_HEADER)) <
+//       ((EFI_MM_COMMUNICATE_HEADER *)BufferAddr)->MessageLength)
+//   {
+//     return EFI_ACCESS_DENIED;
+//   }
 
-  return EFI_SUCCESS;
-}
+//   return EFI_SUCCESS;
+// }
 
 /**
   The PI Standalone MM entry point for the CPU driver.
@@ -131,42 +132,41 @@ PiMmStandaloneMmCpuDriverEntry (
   DEBUG ((DEBUG_INFO, "Received event - 0x%x on cpu %d\n", EventId, CpuNumber));
 
   Status = EFI_SUCCESS;
-
+  PerCpuGuidedEventContext[CpuNumber] = NULL;
+  // If input buffer is 0 let us not create unnecessary GuidedEventContext
   // Perform parameter validation of NsCommBufferAddr
-  if (NsCommBufferAddr == (UINTN)NULL) {
-    return EFI_INVALID_PARAMETER;
+  if (NsCommBufferAddr != (UINTN)NULL) {
+    // Status = CheckBufferAddr (NsCommBufferAddr);
+    // if (EFI_ERROR (Status)) {
+    //   DEBUG ((DEBUG_ERROR, "Check Buffer failed: %r\n", Status));
+    //   return Status;
+    // }
+
+    // Find out the size of the buffer passed
+    NsCommBufferSize = ((EFI_MM_COMMUNICATE_HEADER *)NsCommBufferAddr)->MessageLength +
+                       sizeof (EFI_MM_COMMUNICATE_HEADER);
+
+    GuidedEventContext = NULL;
+    // Now that the secure world can see the normal world buffer, allocate
+    // memory to copy the communication buffer to the secure world.
+    Status = mMmst->MmAllocatePool (
+                      EfiRuntimeServicesData,
+                      NsCommBufferSize,
+                      (VOID **)&GuidedEventContext
+                      );
+
+    if (Status != EFI_SUCCESS) {
+      DEBUG ((DEBUG_ERROR, "Mem alloc failed - 0x%x\n", EventId));
+      return EFI_OUT_OF_RESOURCES;
+    }
+
+    // X1 contains the VA of the normal world memory accessible from
+    // secure world.
+    CopyMem (GuidedEventContext, (CONST VOID *)NsCommBufferAddr, NsCommBufferSize);
+
+    // Stash the pointer to the allocated Event Context for this CPU
+    PerCpuGuidedEventContext[CpuNumber] = GuidedEventContext;
   }
-
-  Status = CheckBufferAddr (NsCommBufferAddr);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "Check Buffer failed: %r\n", Status));
-    return Status;
-  }
-
-  // Find out the size of the buffer passed
-  NsCommBufferSize = ((EFI_MM_COMMUNICATE_HEADER *)NsCommBufferAddr)->MessageLength +
-                     sizeof (EFI_MM_COMMUNICATE_HEADER);
-
-  GuidedEventContext = NULL;
-  // Now that the secure world can see the normal world buffer, allocate
-  // memory to copy the communication buffer to the secure world.
-  Status = mMmst->MmAllocatePool (
-                    EfiRuntimeServicesData,
-                    NsCommBufferSize,
-                    (VOID **)&GuidedEventContext
-                    );
-
-  if (Status != EFI_SUCCESS) {
-    DEBUG ((DEBUG_ERROR, "Mem alloc failed - 0x%x\n", EventId));
-    return EFI_OUT_OF_RESOURCES;
-  }
-
-  // X1 contains the VA of the normal world memory accessible from
-  // secure world.
-  CopyMem (GuidedEventContext, (CONST VOID *)NsCommBufferAddr, NsCommBufferSize);
-
-  // Stash the pointer to the allocated Event Context for this CPU
-  PerCpuGuidedEventContext[CpuNumber] = GuidedEventContext;
 
   ZeroMem (&MmEntryPointContext, sizeof (EFI_MM_ENTRY_CONTEXT));
 
@@ -186,16 +186,18 @@ PiMmStandaloneMmCpuDriverEntry (
 
   mMmEntryPoint (&MmEntryPointContext);
 
-  // Free the memory allocation done earlier and reset the per-cpu context
-  ASSERT (GuidedEventContext);
-  CopyMem ((VOID *)NsCommBufferAddr, (CONST VOID *)GuidedEventContext, NsCommBufferSize);
+  if (NsCommBufferAddr != (UINTN)NULL) {
+    // Free the memory allocation done earlier and reset the per-cpu context
+    ASSERT (GuidedEventContext);
+    CopyMem ((VOID *)NsCommBufferAddr, (CONST VOID *)GuidedEventContext, NsCommBufferSize);
 
-  Status = mMmst->MmFreePool ((VOID *)GuidedEventContext);
-  if (Status != EFI_SUCCESS) {
-    return EFI_OUT_OF_RESOURCES;
+    Status = mMmst->MmFreePool ((VOID *)GuidedEventContext);
+    if (Status != EFI_SUCCESS) {
+      return EFI_OUT_OF_RESOURCES;
+    }
+
+    PerCpuGuidedEventContext[CpuNumber] = NULL;
   }
-
-  PerCpuGuidedEventContext[CpuNumber] = NULL;
 
   return Status;
 }
@@ -254,7 +256,7 @@ PiMmCpuTpFwRootMmiHandler (
 
   CpuNumber = mMmst->CurrentlyExecutingCpu;
   if (PerCpuGuidedEventContext[CpuNumber] == NULL) {
-    return EFI_NOT_FOUND;
+    return RETURN_SUCCESS;
   }
 
   DEBUG ((
