@@ -37,6 +37,10 @@ extern EFI_MM_SYSTEM_TABLE  *mMmst;
 //
 extern EFI_MM_CPU_PROTOCOL  mMmCpuState;
 
+//
+// MM event handling specific declarations
+//
+extern EFI_MM_COMMUNICATE_HEADER      **PerCpuGuidedEventContext;
 extern EFI_MMRAM_DESCRIPTOR           mSCommBuffer;
 extern MP_INFORMATION_HOB_DATA        *mMpInformationHobData;
 extern EFI_MM_CONFIGURATION_PROTOCOL  mMmConfig;
