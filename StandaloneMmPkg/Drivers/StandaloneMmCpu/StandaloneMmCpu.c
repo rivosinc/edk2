@@ -24,7 +24,7 @@
 
 // GUID to identify HOB with whereabouts of communication buffer with Normal
 // World
-extern EFI_GUID  gEfiStandaloneMmNonSecureBufferGuid;
+//extern EFI_GUID  gEfiStandaloneMmNonSecureBufferGuid;
 
 // GUID to identify HOB where the entry point of this CPU driver will be
 // populated to allow the entry point driver to invoke it upon receipt of an
@@ -97,7 +97,7 @@ StandaloneMmCpuInitialize (
   MM_CPU_DRIVER_EP_DESCRIPTOR     *CpuDriverEntryPointDesc;
   EFI_CONFIGURATION_TABLE         *ConfigurationTable;
   MP_INFORMATION_HOB_DATA         *MpInformationHobData;
-  EFI_MMRAM_DESCRIPTOR            *NsCommBufMmramRange;
+//  EFI_MMRAM_DESCRIPTOR            *NsCommBufMmramRange;
   EFI_STATUS                      Status;
   EFI_HANDLE                      DispatchHandle;
   UINT32                          MpInfoSize;
@@ -119,6 +119,10 @@ StandaloneMmCpuInitialize (
   if (EFI_ERROR (Status)) {
     return Status;
   }
+
+  // Open: Root handler makes more sense for Async flows. It's assumption that there is always
+  // input buffer address supplied causes issues with the flows. Check PiMmCpuTpFwRootMmiHandler()
+  // Need better way to handle this.
 
   // register the root MMI handler
   Status = mMmst->MmiHandlerRegister (
@@ -171,21 +175,21 @@ StandaloneMmCpuInitialize (
 
   // Find the descriptor that contains the whereabouts of the buffer for
   // communication with the Normal world.
-  Status = GetGuidedHobData (
-             HobStart,
-             &gEfiStandaloneMmNonSecureBufferGuid,
-             (VOID **)&NsCommBufMmramRange
-             );
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "NsCommBufMmramRange HOB data extraction failed - 0x%x\n", Status));
-    return Status;
-  }
+  // Status = GetGuidedHobData (
+  //            HobStart,
+  //            &gMmCommBufferHobGuid,
+  //            (VOID **)&NsCommBufMmramRange
+  //            );
+  // if (EFI_ERROR (Status)) {
+  //   DEBUG ((DEBUG_ERROR, "NsCommBufMmramRange HOB data extraction failed - 0x%x\n", Status));
+  //   return Status;
+  // }
 
-  DEBUG ((DEBUG_INFO, "mNsCommBuffer.PhysicalStart - 0x%lx\n", (UINTN)NsCommBufMmramRange->PhysicalStart));
-  DEBUG ((DEBUG_INFO, "mNsCommBuffer.PhysicalSize - 0x%lx\n", (UINTN)NsCommBufMmramRange->PhysicalSize));
+  // DEBUG ((DEBUG_INFO, "mNsCommBuffer.PhysicalStart - 0x%lx\n", (UINTN)NsCommBufMmramRange->PhysicalStart));
+  // DEBUG ((DEBUG_INFO, "mNsCommBuffer.PhysicalSize (PAGES) - 0x%lx\n", (UINTN)NsCommBufMmramRange->NumberOfPages));
 
-  CopyMem (&mNsCommBuffer, NsCommBufMmramRange, sizeof (EFI_MMRAM_DESCRIPTOR));
-  DEBUG ((DEBUG_INFO, "mNsCommBuffer: 0x%016lx - 0x%lx\n", mNsCommBuffer.CpuStart, mNsCommBuffer.PhysicalSize));
+  // CopyMem (&mNsCommBuffer, NsCommBufMmramRange, sizeof (EFI_MMRAM_DESCRIPTOR));
+  // DEBUG ((DEBUG_INFO, "mNsCommBuffer: 0x%016lx - 0x%lx\n", mNsCommBuffer.CpuStart, mNsCommBuffer.PhysicalSize));
 
   Status = GetGuidedHobData (
              HobStart,
