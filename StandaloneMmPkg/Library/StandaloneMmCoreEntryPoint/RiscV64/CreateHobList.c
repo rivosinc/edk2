@@ -35,9 +35,6 @@ HobConstructor (
   IN VOID   *EfiFreeMemoryTop
   );
 
-// GUID to identify HOB with whereabouts of communication buffer with Normal
-// World
-extern EFI_GUID  gEfiStandaloneMmNonSecureBufferGuid;
 
 // GUID to identify HOB where the entry point of the CPU driver will be
 // populated to allow this entry point driver to invoke it upon receipt of an
@@ -90,24 +87,11 @@ MmBuildCommBufferHob (
   )
 {
   MM_COMM_BUFFER        *MmCommBuffer;
-  EFI_MMRAM_DESCRIPTOR  *NsCommBufMmramRange;
 
   if ((PayloadBootInfo->MmNsCommBufBase == 0) || (PayloadBootInfo->MmNsCommBufSize == 0)) {
     return EFI_INVALID_PARAMETER;
   }
 
-  // Create a Guided HOB to tell the CPU driver the location and length
-  // of the communication buffer shared with the Normal world.
-  NsCommBufMmramRange = (EFI_MMRAM_DESCRIPTOR *)BuildGuidHob (
-                                                  &gEfiStandaloneMmNonSecureBufferGuid,
-                                                  sizeof (EFI_MMRAM_DESCRIPTOR)
-                                                  );
-  ASSERT (NsCommBufMmramRange != NULL);
-  // First page is for Comm Buffer Status
-  NsCommBufMmramRange->PhysicalSize  = PayloadBootInfo->MmNsCommBufSize - EFI_PAGE_SIZE;
-  NsCommBufMmramRange->PhysicalStart = PayloadBootInfo->MmNsCommBufBase + EFI_PAGE_SIZE;
-  NsCommBufMmramRange->CpuStart      = NsCommBufMmramRange->PhysicalStart;
-  NsCommBufMmramRange->RegionState   = EFI_CACHEABLE | EFI_ALLOCATED;
 
   // Create MMBuffer status HOB. Valid bit set in this status buffer tells
   // the MM that the buffer content is ready to be consumed.
@@ -120,8 +104,8 @@ MmBuildCommBufferHob (
   // Allocate runtime memory for MM communication status parameters :
   // ReturnStatus, ReturnBufferSize, IsCommBufferValid
   //
-  MmCommBuffer->PhysicalStart = NsCommBufMmramRange->PhysicalStart;
-  MmCommBuffer->NumberOfPages = EFI_SIZE_TO_PAGES (NsCommBufMmramRange->PhysicalSize);
+  MmCommBuffer->PhysicalStart = PayloadBootInfo->MmNsCommBufBase + EFI_PAGE_SIZE;
+  MmCommBuffer->NumberOfPages = EFI_SIZE_TO_PAGES (PayloadBootInfo->MmNsCommBufSize - EFI_PAGE_SIZE);
   MmCommBuffer->Status        = (EFI_PHYSICAL_ADDRESS)PayloadBootInfo->MmNsCommBufBase + sizeof (MM_COMM_BUFFER);
   return EFI_SUCCESS;
 }
