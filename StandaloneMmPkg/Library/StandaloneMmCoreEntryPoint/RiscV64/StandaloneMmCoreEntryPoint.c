@@ -254,7 +254,6 @@ DelegatedEventLoop (
   EFI_STATUS              Status = EFI_UNSUPPORTED;
   UINTN                   SmmStatus;
   RPMI_SMM_MSG_COMM_ARGS  MmReqFwdResp;
-  UINTN                   InputBuffer = (UINTN)NsCommBufMmramRange->PhysicalStart;
 
   //  UINTN       SmmMsgLen, SmmRespLen;
   SendMMComplete (ChannelId, EventCompleteSvcArgs);
@@ -379,7 +378,6 @@ CModuleEntryPoint (
   EFI_RISCV_SMM_PAYLOAD_INFO  *PayloadBootInfo;
   RPMI_SMM_MSG_CMPL_CMD       *InitMmFoundationSmmArgs;
   VOID                        *HobStart;
-  EFI_STATUS                  Status;
 
   PayloadBootInfo = GetAndPrintBootinformation (PayloadInfoAddress);
   if (PayloadBootInfo == NULL) {
