@@ -58,6 +58,7 @@
   RiscVSbiLib|MdePkg/Library/BaseRiscVSbiLib/BaseRiscVSbiLib.inf
   SafeIntLib|MdePkg/Library/BaseSafeIntLib/BaseSafeIntLib.inf
   CommonRiscvMpxyLib|MdePkg/Library/CommonRiscvMpxyLib/CommonRiscvMpxy.inf
+  RiscvSseLib|StandaloneMmPkg/Library/StandaloneMmRiscvSseLib/StandaloneMmRiscvSse.inf
   SerialPortLib|MdeModulePkg/Library/BaseSerialPortLib16550/BaseSerialPortLib16550.inf
   HobPrintLib|MdeModulePkg/Library/HobPrintLib/HobPrintLib.inf
   ImagePropertiesRecordLib|MdeModulePkg/Library/ImagePropertiesRecordLib/ImagePropertiesRecordLib.inf
