@@ -14,10 +14,10 @@
 
 ASM_FUNC (_SseEntryPoint)
   /*
-   * a6: Hart Id
-   * a7: Event Arg
+   * a7: Hart Id
+   * a6: Event Arg
    */
-  move  a0, a7
+  move  a0, a6
   call  SbiSseEntryPoint
 
   li a7, SBI_EXT_SSE

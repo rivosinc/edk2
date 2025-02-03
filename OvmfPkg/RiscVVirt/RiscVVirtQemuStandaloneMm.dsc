@@ -114,7 +114,7 @@
 
   # Serial Port
   gEfiMdeModulePkgTokenSpaceGuid.PcdSerialUseMmio|TRUE
-  gEfiMdeModulePkgTokenSpaceGuid.PcdSerialRegisterBase|0x10000000
+  gEfiMdeModulePkgTokenSpaceGuid.PcdSerialRegisterBase|0x10002000
   gEfiMdeModulePkgTokenSpaceGuid.PcdSerialBaudRate|9600
   gEfiMdeModulePkgTokenSpaceGuid.PcdSerialUseHardwareFlowControl|FALSE
   gEfiMdeModulePkgTokenSpaceGuid.PcdSerialClockRate|3686400
