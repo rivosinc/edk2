@@ -298,7 +298,7 @@ RacInit (
       return EFI_NOT_READY;
     }
 
-    if (SbiMpxyChannelOpen (gMpxyChannelId) != EFI_SUCCESS) {
+    if (SbiMpxyInit () != EFI_SUCCESS) {
       return EFI_NOT_READY;
     }
 
