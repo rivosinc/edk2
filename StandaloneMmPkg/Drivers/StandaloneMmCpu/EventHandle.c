@@ -129,7 +129,7 @@ PiMmStandaloneMmCpuDriverEntry (
   EFI_STATUS                 Status;
   UINTN                      NsCommBufferSize;
 
-  DEBUG ((DEBUG_INFO, "Received event - 0x%x on cpu %d\n", EventId, CpuNumber));
+  DEBUG ((DEBUG_VERBOSE, "Received event - 0x%x on cpu %d\n", EventId, CpuNumber));
 
   Status = EFI_SUCCESS;
   PerCpuGuidedEventContext[CpuNumber] = NULL;

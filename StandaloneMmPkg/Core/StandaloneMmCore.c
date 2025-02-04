@@ -506,7 +506,7 @@ MmEntryPoint (
   MM_COMM_BUFFER_STATUS      *CommunicationStatus;
   UINTN                      BufferSize;
 
-  DEBUG ((DEBUG_INFO, "MmEntryPoint ...\n"));
+  DEBUG ((DEBUG_VERBOSE, "MmEntryPoint ...\n"));
 
   //
   // Update MMST using the context
@@ -593,7 +593,7 @@ MmEntryPoint (
   // TBD: Do not use private data structure ?
   //
 
-  DEBUG ((DEBUG_INFO, "MmEntryPoint Done\n"));
+  DEBUG ((DEBUG_VERBOSE, "MmEntryPoint Done\n"));
 }
 
 /** Register the MM Entry Point provided by the MM Core with the
