@@ -547,13 +547,13 @@ MmCommunication2Initialize (
       continue;
     }
 
-    Status = SbiMpxyChannelOpen (GuidChidArray[Index].ChannelId);
+    Status = SbiMpxyInit ();
     if (EFI_ERROR (Status)) {
       DEBUG (
         (
          DEBUG_ERROR,
          "InitRiscVSmmArgs: "
-         "Failed to set shared memory\n"
+         "Failed to init MPXY\n"
         )
         );
       ASSERT (0);
