@@ -309,12 +309,12 @@ InitRiscVSmmArgs (
   OUT RPMI_SMM_MSG_CMPL_CMD  *InitMmFoundationSmmArgs
   )
 {
-  if (SbiMpxyChannelOpen (ChannelId) != EFI_SUCCESS) {
+  if (SbiMpxyInit () != EFI_SUCCESS) {
     DEBUG (
       (
        DEBUG_ERROR,
        "InitRiscVSmmArgs: "
-       "Failed to set shared memory\n"
+       "Failed to init MPXY\n"
       )
       );
      InitMmFoundationSmmArgs->mm_data.Arg0       = RISCV_SMM_RET_NOT_SUPPORTED;
@@ -499,6 +499,7 @@ CModuleEntryPoint (
   InitMmFoundationSmmArgs = AllocateZeroPool (sizeof (*InitMmFoundationSmmArgs));
   ASSERT (InitMmFoundationSmmArgs != NULL);
 
+  DEBUG ((DEBUG_INFO, "Cpu Driver EP %lx\n", PayloadBootInfo->MpxyChannelId));
   InitRiscVSmmArgs (PayloadBootInfo->MpxyChannelId, InitMmFoundationSmmArgs);
   InitRiscVSse (CpuId, PayloadBootInfo->MpxyChannelId, InitMmFoundationSmmArgs);
 

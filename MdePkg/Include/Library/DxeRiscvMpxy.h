@@ -76,8 +76,8 @@ SbiMpxyReadChannelAttrs (
 **/
 EFI_STATUS
 EFIAPI
-SbiMpxyChannelOpen (
-  IN UINTN  ChannelId
+SbiMpxyInit (
+  VOID
   );
 
 /**
@@ -89,8 +89,8 @@ SbiMpxyChannelOpen (
 **/
 EFI_STATUS
 EFIAPI
-SbiMpxyChannelClose (
-  IN UINTN  ChannelId
+SbiMpxyDeinit (
+  VOID
   );
 
 /**
