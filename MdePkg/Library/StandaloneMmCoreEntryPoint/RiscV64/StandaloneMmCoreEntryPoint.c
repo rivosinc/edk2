@@ -11,8 +11,81 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 #include <StandaloneMmCpu.h>
 #include <StandaloneMmCoreEntryPoint.h>
 
-PI_MM_CPU_DRIVER_ENTRYPOINT  CpuDriverEntryPoint = NULL;
+#include <PiPei.h>
+#include <Guid/MmramMemoryReserve.h>
+#include <Guid/MpInformation.h>
 
+#include <Library/DebugLib.h>
+#include <Library/HobLib.h>
+#include <Library/BaseLib.h>
+#include <Library/MemoryAllocationLib.h>
+#include <Library/BaseMemoryLib.h>
+#include <Library/SerialPortLib.h>
+#include <Library/PcdLib.h>
+
+#include <Library/BaseRiscVSbiLib.h>
+#include <Library/DxeRiscvMpxy.h>
+
+PI_MM_CPU_DRIVER_ENTRYPOINT  CpuDriverEntryPoint = NULL;
+EFI_MMRAM_DESCRIPTOR         *NsCommBufMmramRange;
+
+/** RPMI Messages Types */
+enum rpmi_message_type {
+  /* Normal request backed with ack */
+  RPMI_MSG_NORMAL_REQUEST = 0x0,
+  /* Request without any ack */
+  RPMI_MSG_POSTED_REQUEST = 0x1,
+  /* Acknowledgment for normal request message */
+  RPMI_MSG_ACKNOWLDGEMENT = 0x2,
+  /* Notification message */
+  RPMI_MSG_NOTIFICATION = 0x3,
+};
+
+/*
+ * RPMI SERVICEGROUPS AND SERVICES
+ */
+
+/** RPMI ServiceGroups IDs */
+enum rpmi_servicegroup_id {
+  RPMI_SRVGRP_ID_MIN          = 0,
+  RPMI_SRVGRP_BASE            = 0x00001,
+  RPMI_SRVGRP_SYSTEM_RESET    = 0x00002,
+  RPMI_SRVGRP_SYSTEM_SUSPEND  = 0x00003,
+  RPMI_SRVGRP_HSM             = 0x00004,
+  RPMI_SRVGRP_CPPC            = 0x00005,
+  RPMI_SRVGRP_CLOCK           = 0x00007,
+  RPMI_SRVGRP_REQUEST_FORWARD = 0xC,
+  RPMI_SRVGRP_ID_MAX_COUNT,
+};
+
+/** RPMI Error Types */
+enum rpmi_error {
+  RPMI_SUCCESS        = 0,
+  RPMI_ERR_FAILED     = -1,
+  RPMI_ERR_NOTSUPP    = -2,
+  RPMI_ERR_INVAL      = -3,
+  RPMI_ERR_DENIED     = -4,
+  RPMI_ERR_NOTFOUND   = -5,
+  RPMI_ERR_OUTOFRANGE = -6,
+  RPMI_ERR_OUTOFRES   = -7,
+  RPMI_ERR_HWFAULT    = -8,
+};
+
+/** RPMI ReqFwd ServiceGroup Service IDs */
+enum rpmi_reqfwd_service_id {
+  RPMI_REQFWD_ENABLE_NOTIFICATION      = 1,
+  RPMI_REQFWD_RETRIEVE_CURRENT_MESSAGE = 2,
+  RPMI_REQFWD_COMPLETE_CURRENT_MESSAGE = 3,
+};
+
+/**
+  Retrieve a pointer to and print the boot information passed by privileged
+  secure firmware.
+
+  @param  [in] SharedBufAddress   The pointer memory shared with privileged
+                                  firmware.
+
+**/
 EFI_RISCV_SMM_PAYLOAD_INFO *
 GetAndPrintBootinformation (
   IN VOID  *PayloadInfoAddress
@@ -55,6 +128,236 @@ GetAndPrintBootinformation (
   return PayloadBootInfo;
 }
 
+void
+PrintRpmiMessageHeader (
+  RPMI_MESSAGE_HEADER  *Header
+  )
+{
+  DEBUG ((DEBUG_VERBOSE, "Print RPMI:\n"));
+  DEBUG ((DEBUG_VERBOSE, "  ServiceGroupId: 0x%04x\n", Header->ServiceGroupId));
+  DEBUG ((DEBUG_VERBOSE, "  ServiceId: 0x%02x\n", Header->ServiceId));
+  DEBUG ((DEBUG_VERBOSE, "  Flags: 0x%02x\n", Header->Flags));
+  DEBUG ((DEBUG_VERBOSE, "  Token: 0x%04x\n", Header->Token));
+  DEBUG ((DEBUG_VERBOSE, "  DataLen: 0x%04x\n", Header->DataLen));
+}
+
+STATIC VOID
+PrepareRpmiHeader (
+  RPMI_MESSAGE_HEADER  *Hdr,
+  UINT8                Msg
+  )
+{
+  Hdr->Flags          = RPMI_MSG_NORMAL_REQUEST;
+  Hdr->ServiceGroupId = RPMI_SRVGRP_REQUEST_FORWARD;
+  Hdr->ServiceId      = Msg;
+}
+
+VOID
+PrintReqfwdRetrieveResp (
+  RPMI_SMM_MSG_COMM_ARGS  *Resp
+  )
+{
+  PrintRpmiMessageHeader (&(Resp->rpmi_resp.hdr));
+  DEBUG ((DEBUG_VERBOSE, "Print REQFWD_RETRIEVE_RESP:\n"));
+  DEBUG ((DEBUG_VERBOSE, "  Status: 0x%08x\n", Resp->rpmi_resp.reqfwd_resp.Remaining));
+  DEBUG ((DEBUG_VERBOSE, "  Remaining: 0x%08x\n", Resp->rpmi_resp.reqfwd_resp.Returned));
+  DEBUG ((DEBUG_VERBOSE, "  Returned: 0x%08x\n", Resp->rpmi_resp.reqfwd_resp.Status));
+}
+
+VOID
+EFIAPI
+SendMMComplete (
+  IN UINTN                  ChannelId,
+  IN RPMI_SMM_MSG_CMPL_CMD  *EventCompleteSvcArgs
+  )
+{
+  EFI_STATUS  Status;
+  UINTN       SmmMsgLen, SmmRespLen;
+
+  PrepareRpmiHeader (&EventCompleteSvcArgs->hdr, REQFWD_COMPLETE_CURRENT_MESSAGE);
+  SmmMsgLen                          = sizeof (RPMI_SMM_MSG_CMPL_CMD);
+  EventCompleteSvcArgs->mm_data.Arg0 = EFI_SUCCESS;
+  EventCompleteSvcArgs->mm_data.Arg1 = 0;
+
+  Status = SbiMpxySendMessage (
+             ChannelId,
+             REQFWD_COMPLETE_CURRENT_MESSAGE,
+             EventCompleteSvcArgs,
+             SmmMsgLen,
+             EventCompleteSvcArgs,
+             &SmmRespLen
+             );
+  if (EFI_ERROR (Status)) {
+    DEBUG (
+      (
+       DEBUG_ERROR,
+       "DelegatedEventLoop: "
+       "Failed to commuicate\n"
+      )
+      );
+    Status = EFI_ACCESS_DENIED;
+    ASSERT (0);
+  }
+}
+
+VOID
+EFIAPI
+RetrieveReqFwdMessage (
+  IN UINTN                ChannelId,
+  RPMI_SMM_MSG_COMM_ARGS  *pReqFwdResp
+  )
+{
+  EFI_STATUS           Status;
+  UINTN                SmmMsgLen, SmmRespLen;
+  REQFWD_RETRIEVE_CMD  ReqFwdCmd;
+
+  SmmRespLen = 0;
+  PrepareRpmiHeader (&ReqFwdCmd.hdr, RPMI_REQFWD_RETRIEVE_CURRENT_MESSAGE);
+  SmmMsgLen = sizeof (REQFWD_RETRIEVE_CMD);
+  Status    = SbiMpxySendMessage (
+                ChannelId,
+                RPMI_REQFWD_RETRIEVE_CURRENT_MESSAGE,
+                (VOID *)&ReqFwdCmd,
+                SmmMsgLen,
+                (VOID *)pReqFwdResp,
+                &SmmRespLen
+                );
+  if (EFI_ERROR (Status) || (SmmRespLen == 0)) {
+    DEBUG (
+      (
+       DEBUG_ERROR,
+       "DelegatedEventLoop: "
+       "Failed to commuicate\n"
+      )
+      );
+    Status = EFI_ACCESS_DENIED;
+    ASSERT (0);
+  }
+}
+
+/**
+  A loop to delegated events.
+
+  @param  [in] EventCompleteSvcArgs   Pointer to the event completion arguments.
+
+**/
+VOID
+EFIAPI
+DelegatedEventLoop (
+  IN UINTN                  CpuId,
+  IN UINTN                  ChannelId,
+  IN RPMI_SMM_MSG_CMPL_CMD  *EventCompleteSvcArgs
+  )
+{
+  EFI_STATUS              Status = EFI_UNSUPPORTED;
+  UINTN                   SmmStatus;
+  RPMI_SMM_MSG_COMM_ARGS  MmReqFwdResp;
+
+  //  UINTN       SmmMsgLen, SmmRespLen;
+  SendMMComplete (ChannelId, EventCompleteSvcArgs);
+
+  while (TRUE) {
+    RetrieveReqFwdMessage (ChannelId, &MmReqFwdResp);
+    PrintReqfwdRetrieveResp (&MmReqFwdResp);
+
+    // Passing 0 in the entry enforces it to take sync MM flow.
+    Status = CpuDriverEntryPoint (
+               0,
+               CpuId,
+               0
+               );
+
+    switch (Status) {
+      case EFI_SUCCESS:
+        SmmStatus = RISCV_SMM_RET_SUCCESS;
+        break;
+      case EFI_INVALID_PARAMETER:
+        SmmStatus = RISCV_SMM_RET_INVALID_PARAMS;
+        break;
+      case EFI_ACCESS_DENIED:
+        SmmStatus = RISCV_SMM_RET_DENIED;
+        break;
+      case EFI_OUT_OF_RESOURCES:
+        SmmStatus = RISCV_SMM_RET_NO_MEMORY;
+        break;
+      case EFI_UNSUPPORTED:
+        SmmStatus = RISCV_SMM_RET_NOT_SUPPORTED;
+        break;
+      default:
+        SmmStatus = RISCV_SMM_RET_NOT_SUPPORTED;
+        break;
+    }
+
+    EventCompleteSvcArgs->mm_data.Arg0 = SmmStatus;
+    SendMMComplete (ChannelId, EventCompleteSvcArgs);
+  }
+}
+
+/**
+  Initialize parameters to be sent via SMM call.
+
+  @param[out]     InitMmFoundationSmmArgs  Args structure
+
+**/
+STATIC
+VOID
+InitRiscVSmmArgs (
+  IN UINTN                   ChannelId,
+  OUT RPMI_SMM_MSG_CMPL_CMD  *InitMmFoundationSmmArgs
+  )
+{
+  if (SbiMpxyChannelOpen (ChannelId) != EFI_SUCCESS) {
+    DEBUG (
+      (
+       DEBUG_ERROR,
+       "InitRiscVSmmArgs: "
+       "Failed to set shared memory\n"
+      )
+      );
+    InitMmFoundationSmmArgs->mm_data.Arg0 = RISCV_SMM_RET_NOT_SUPPORTED;
+  } else {
+    InitMmFoundationSmmArgs->mm_data.Arg0 = RISCV_SMM_RET_SUCCESS;
+  }
+
+  InitMmFoundationSmmArgs->mm_data.Arg1 = 0;
+}
+
+/** Returns the HOB data for the matching HOB GUID.
+
+  @param  [in]  HobList  Pointer to the HOB list.
+  @param  [in]  HobGuid  The GUID for the HOB.
+  @param  [out] HobData  Pointer to the HOB data.
+
+  @retval  EFI_SUCCESS            The function completed successfully.
+  @retval  EFI_INVALID_PARAMETER  Invalid parameter.
+  @retval  EFI_NOT_FOUND          Could not find HOB with matching GUID.
+**/
+EFI_STATUS
+GetGuidedHobData (
+  IN  VOID            *HobList,
+  IN  CONST EFI_GUID  *HobGuid,
+  OUT VOID            **HobData
+  )
+{
+  EFI_HOB_GUID_TYPE  *Hob;
+
+  if ((HobList == NULL) || (HobGuid == NULL) || (HobData == NULL)) {
+    return EFI_INVALID_PARAMETER;
+  }
+
+  Hob = GetNextGuidHob (HobGuid, HobList);
+  if (Hob == NULL) {
+    return EFI_NOT_FOUND;
+  }
+
+  *HobData = GET_GUID_HOB_DATA (Hob);
+  if (*HobData == NULL) {
+    return EFI_NOT_FOUND;
+  }
+
+  return EFI_SUCCESS;
+}
+
 /**
   The entry point of Standalone MM Foundation.
 
@@ -70,6 +373,7 @@ CModuleEntryPoint (
   )
 {
   EFI_RISCV_SMM_PAYLOAD_INFO  *PayloadBootInfo;
+  RPMI_SMM_MSG_CMPL_CMD       *InitMmFoundationSmmArgs;
   VOID                        *HobStart;
 
   PayloadBootInfo = GetAndPrintBootinformation (PayloadInfoAddress);
@@ -89,5 +393,11 @@ CModuleEntryPoint (
 
   DEBUG ((DEBUG_INFO, "Cpu Driver EP %p\n", (VOID *)CpuDriverEntryPoint));
 
+  InitMmFoundationSmmArgs = AllocateZeroPool (sizeof (*InitMmFoundationSmmArgs));
+  ASSERT (InitMmFoundationSmmArgs != NULL);
+
+  InitRiscVSmmArgs (PayloadBootInfo->MpxyChannelId, InitMmFoundationSmmArgs);
+
+  DelegatedEventLoop (CpuId, PayloadBootInfo->MpxyChannelId, InitMmFoundationSmmArgs);
   ASSERT (0);
 }
