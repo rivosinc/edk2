@@ -289,12 +289,6 @@
   #
   UefiCpuPkg/CpuDxeRiscV64/CpuDxeRiscV64.inf
   MdeModulePkg/Core/RuntimeDxe/RuntimeDxe.inf
-  MdeModulePkg/Universal/Variable/RuntimeDxe/VariableRuntimeDxe.inf {
-    <LibraryClasses>
-      NULL|MdeModulePkg/Library/VarCheckUefiLib/VarCheckUefiLib.inf
-      # don't use unaligned CopyMem () on the UEFI varstore NOR flash region
-      BaseMemoryLib|MdePkg/Library/BaseMemoryLib/BaseMemoryLib.inf
-  }
 
 !if $(SECURE_BOOT_ENABLE) == TRUE
   MdeModulePkg/Universal/SecurityStubDxe/SecurityStubDxe.inf {
@@ -310,11 +304,32 @@
   MdeModulePkg/Universal/SecurityStubDxe/SecurityStubDxe.inf
 !endif
   MdeModulePkg/Universal/CapsuleRuntimeDxe/CapsuleRuntimeDxe.inf
-  MdeModulePkg/Universal/FaultTolerantWriteDxe/FaultTolerantWriteDxe.inf
   MdeModulePkg/Universal/MonotonicCounterRuntimeDxe/MonotonicCounterRuntimeDxe.inf
   MdeModulePkg/Universal/ResetSystemRuntimeDxe/ResetSystemRuntimeDxe.inf
   EmbeddedPkg/RealTimeClockRuntimeDxe/RealTimeClockRuntimeDxe.inf
   EmbeddedPkg/MetronomeDxe/MetronomeDxe.inf
+
+  #
+  # Variable services
+  #
+!if $(SECURE_BOOT_ENABLE) == FALSE
+  MdeModulePkg/Universal/FaultTolerantWriteDxe/FaultTolerantWriteDxe.inf
+  MdeModulePkg/Universal/Variable/RuntimeDxe/VariableRuntimeDxe.inf {
+    <LibraryClasses>
+      NULL|MdeModulePkg/Library/VarCheckUefiLib/VarCheckUefiLib.inf
+      # AuthVariableLib|MdeModulePkg/Library/AuthVariableLibNull/AuthVariableLibNull.inf
+      # VarCheckLib|MdeModulePkg/Library/VarCheckLib/VarCheckLib.inf
+      # don't use unaligned CopyMem () on the UEFI varstore NOR flash region
+      BaseMemoryLib|MdePkg/Library/BaseMemoryLib/BaseMemoryLib.inf
+  }
+!else
+  OvmfPkg/RiscVVirt/MmCommunicationDxe/MmCommunication.inf {
+   <LibraryClasses>
+      NULL|StandaloneMmPkg/Library/VariableMmDependency/VariableMmDependency.inf
+  }
+  MdeModulePkg/Universal/Variable/RuntimeDxe/VariableSmmRuntimeDxe.inf
+  # SecurityPkg/VariableAuthenticated/SecureBootConfigDxe/SecureBootConfigDxe.inf
+!endif
 
   MdeModulePkg/Universal/Console/ConPlatformDxe/ConPlatformDxe.inf
   MdeModulePkg/Universal/Console/ConSplitterDxe/ConSplitterDxe.inf
