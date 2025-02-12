@@ -24,6 +24,7 @@
 [Sources.RISCV64]
   RiscV64/StandaloneMmCoreEntryPoint.c
   RiscV64/EntryPoint.S
+  RiscV64/CreateHobList.c
 
   [Sources.X64]
   X64/StandaloneMmCoreEntryPoint.c

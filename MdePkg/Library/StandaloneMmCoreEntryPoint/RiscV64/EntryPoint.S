@@ -9,7 +9,7 @@
 .align 3
 
 #include <Register/RiscV64/RiscVImpl.h>
-#include <Library/RiscV64/StandaloneMmCoreEntryPoint.h>
+#include <StandaloneMmCoreEntryPoint.h>
 
 ASM_FUNC (_ModuleEntryPoint)
   /*
