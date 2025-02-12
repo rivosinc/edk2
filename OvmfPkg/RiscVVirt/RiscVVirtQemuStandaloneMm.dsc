@@ -56,6 +56,8 @@
   SerialPortLib|MdePkg/Library/BaseSerialPortLibRiscVSbiLib/BaseSerialPortLibRiscVSbiLibRam.inf
 
   PlatformHookLib|MdeModulePkg/Library/BasePlatformHookLibNull/BasePlatformHookLibNull.inf
+  VariableFlashInfoLib|MdeModulePkg/Library/BaseVariableFlashInfoLib/BaseVariableFlashInfoLib.inf
+
   SafeIntLib|MdePkg/Library/BaseSafeIntLib/BaseSafeIntLib.inf
   HobPrintLib|MdeModulePkg/Library/HobPrintLib/HobPrintLib.inf
   ImagePropertiesRecordLib|MdeModulePkg/Library/ImagePropertiesRecordLib/ImagePropertiesRecordLib.inf
@@ -128,3 +130,5 @@
   StandaloneMmPkg/Core/StandaloneMmCore.inf
   StandaloneMmPkg/Drivers/StandaloneMmCpu/StandaloneMmCpu.inf
   OvmfPkg/VirtNorFlashDxe/VirtNorFlashStandaloneMm.inf
+  MdeModulePkg/Universal/FaultTolerantWriteDxe/FaultTolerantWriteStandaloneMm.inf
+
