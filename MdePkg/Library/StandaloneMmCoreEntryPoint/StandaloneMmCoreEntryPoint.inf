@@ -18,16 +18,27 @@
   LIBRARY_CLASS                  = StandaloneMmCoreEntryPoint|MM_CORE_STANDALONE
 
 #
-#  VALID_ARCHITECTURES           = X64
+#  VALID_ARCHITECTURES           = X64 RISCV64
 #
 
-[Sources.X64]
+[Sources.RISCV64]
+  RiscV64/StandaloneMmCoreEntryPoint.c
+  RiscV64/EntryPoint.S
+
+  [Sources.X64]
   X64/StandaloneMmCoreEntryPoint.c
 
 [Packages]
   MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  StandaloneMmPkg/StandaloneMmPkg.dec
 
 [LibraryClasses]
   BaseLib
   DebugLib
   StackCheckLib
+
+[Guids]
+  gMpInformationHobGuid
+  gEfiMmPeiMmramMemoryReserveGuid
+  gEfiMmCpuDriverEpDescriptorGuid
