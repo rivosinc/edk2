@@ -11,7 +11,6 @@
 #include <Library/BaseRiscVSbiLib.h>
 #include <Library/UefiLib.h>
 #include <Library/TimerLib.h>
-
 #include "Timer.h"
 
 //
@@ -116,7 +115,7 @@ TimerInterruptHandler (
     mTimerNotifyFunction (
       DivU64x32 (
         EFI_TIMER_PERIOD_SECONDS (PeriodStart - mLastPeriodStart),
-        GetDTTimerFreq ()
+        GetPerformanceCounterProperties (NULL,NULL)
         )
       );
   }
@@ -131,7 +130,7 @@ TimerInterruptHandler (
   PeriodStart     += DivU64x32 (
                        MultU64x32 (
                          mTimerPeriod,
-                         GetDTTimerFreq ()
+                         GetPerformanceCounterProperties (NULL,NULL)
                          ),
                        1000000u
                        );  // convert to tick
@@ -234,7 +233,7 @@ TimerDriverSetTimerPeriod (
   PeriodStart     += DivU64x32 (
                        MultU64x32 (
                          mTimerPeriod,
-                         GetDTTimerFreq ()
+                         GetPerformanceCounterProperties (NULL,NULL)
                          ),
                        1000000u
                        ); // convert to tick

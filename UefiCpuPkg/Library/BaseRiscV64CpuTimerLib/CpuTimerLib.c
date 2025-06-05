@@ -18,7 +18,7 @@
 #include <Library/FdtLib.h>
 
 // Timer base retrieved from DT
-STATIC UINT32  mTimeBase;
+STATIC UINT64  mTimeBase;
 
 /**
   Stalls the CPU for at least the given number of ticks.
@@ -159,60 +159,9 @@ GetPerformanceCounterProperties (
     *EndValue = 32 - 1;
   }
 
-  return mTimeBase;
-}
-
-/**
-  Converts elapsed ticks of performance counter to time in nanoseconds.
-
-  This function converts the elapsed ticks of running performance counter to
-  time value in unit of nanoseconds.
-
-  @param  Ticks     The number of elapsed ticks of running performance counter.
-
-  @return The elapsed time in nanoseconds.
-
-**/
-UINT64
-EFIAPI
-GetTimeInNanoSecond (
-  IN      UINT64  Ticks
-  )
-{
-  UINT64  NanoSeconds;
-  UINT32  Remainder;
-
-  //
-  //          Ticks
-  // Time = --------- x 1,000,000,000
-  //        Frequency
-  //
-  NanoSeconds = MultU64x32 (DivU64x32Remainder (Ticks, mTimeBase, &Remainder), 1000000000u);
-
-  //
-  // Frequency < 0x100000000, so Remainder < 0x100000000, then (Remainder * 1,000,000,000)
-  // will not overflow 64-bit.
-  //
-  NanoSeconds += DivU64x32 (MultU64x32 ((UINT64)Remainder, 1000000000u), mTimeBase);
-
-  return NanoSeconds;
-}
-
-/**
-  Retrieve the CPU time-base frequency from the Device Tree and cache it.
-
-  @retval UINT32  Time-base frequency in Hz.
-**/
-UINT32
-EFIAPI
-GetDTTimerFreq (
-  VOID
-  )
-{
   if (mTimeBase != 0) {
     return mTimeBase;
   }
-
   //
   // Locate the FDT HOB and validate header
   //
@@ -251,4 +200,40 @@ GetDTTimerFreq (
   //
   mTimeBase = SwapBytes32 (*(CONST UINT32 *)Prop->Data);
   return mTimeBase;
+}
+
+/**
+  Converts elapsed ticks of performance counter to time in nanoseconds.
+
+  This function converts the elapsed ticks of running performance counter to
+  time value in unit of nanoseconds.
+
+  @param  Ticks     The number of elapsed ticks of running performance counter.
+
+  @return The elapsed time in nanoseconds.
+
+**/
+UINT64
+EFIAPI
+GetTimeInNanoSecond (
+  IN      UINT64  Ticks
+  )
+{
+  UINT64  NanoSeconds;
+  UINT32  Remainder;
+
+  //
+  //          Ticks
+  // Time = --------- x 1,000,000,000
+  //        Frequency
+  //
+  NanoSeconds = MultU64x32 (DivU64x32Remainder (Ticks, mTimeBase, &Remainder), 1000000000u);
+
+  //
+  // Frequency < 0x100000000, so Remainder < 0x100000000, then (Remainder * 1,000,000,000)
+  // will not overflow 64-bit.
+  //
+  NanoSeconds += DivU64x32 (MultU64x32 ((UINT64)Remainder, 1000000000u), mTimeBase);
+
+  return NanoSeconds;
 }
